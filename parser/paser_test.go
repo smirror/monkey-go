@@ -63,7 +63,7 @@ func TestReturnStatements(t *testing.T) {
 			t.Errorf("stmt not *ast.returnStatement. got=%T", stmt)
 			continue
 		}
-		if returnStmt.TokenLiteral() != "retrun" {
+		if returnStmt.TokenLiteral() != "return" {
 			t.Errorf("returnStmt.TokenLiteral not 'return', got %q", returnStmt.TokenLiteral())
 		}
 	}
