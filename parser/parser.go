@@ -7,6 +7,17 @@ import (
 	"monkey-go/token"
 )
 
+const (
+	_ int = iota
+	LOWEST
+	EQUALS      // ==
+	LESSGREATER // > or <
+	SUM         // +
+	PRODUCT     // *
+	PREFIX      // -X or !X
+	CALL        // myFunction(X)
+)
+
 type (
 	prefixParseFn func() ast.Expression
 	infixParseFn  func(ast.Expression) ast.Expression
@@ -37,6 +48,10 @@ func New(l *lexer.Lexer) *Parser {
 		l:      l,
 		errors: []string{},
 	}
+
+	p.prefixParseFns = make(map[token.TokenType]prefixParseFn)
+	p.registerPrefix(token.IDENT, p.parseIdentifier)
+
 	//2つトークンに読み込む。curTokenとpeekTokenの療法がセットされる。
 	p.nextToken()
 	p.nextToken()
@@ -79,7 +94,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	case token.RETURN:
 		return p.parseReturnStatement()
 	default:
-		return nil
+		return p.parseExpressionStatement()
 	}
 }
 
@@ -96,7 +111,10 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 		return nil
 	}
 
-	// TODO: セミコロンに遭遇するまで式を読み飛ばしている
+	p.nextToken()
+
+	stmt.Value = p.parseExpression(LOWEST)
+
 	if !p.curTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
@@ -108,12 +126,12 @@ func (p *Parser) curTokenIs(t token.TokenType) bool {
 	return p.curToken.Type == t
 }
 
-func (p *Parser) peelTokenIs(t token.TokenType) bool {
+func (p *Parser) peekTokenIs(t token.TokenType) bool {
 	return p.peekToken.Type == t
 }
 
 func (p *Parser) expectPeek(t token.TokenType) bool {
-	if p.peelTokenIs(t) {
+	if p.peekTokenIs(t) {
 		p.nextToken()
 		return true
 	} else {
@@ -133,4 +151,30 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 	}
 
 	return stmt
+}
+
+func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+	stmt := &ast.ExpressionStatement{Token: p.curToken}
+
+	stmt.Expression = p.parseExpression(LOWEST)
+
+	if p.peekTokenIs(token.SEMICOLON) {
+		p.nextToken()
+	}
+
+	return stmt
+}
+
+func (p *Parser) parseIdentifier() ast.Expression {
+	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+}
+
+func (p *Parser) parseExpression(precedence int) ast.Expression {
+	prefix := p.prefixParseFns[p.curToken.Type]
+	if prefix == nil {
+		return nil
+	}
+	leftExp := prefix()
+
+	return leftExp
 }
