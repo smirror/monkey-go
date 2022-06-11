@@ -1,0 +1,3 @@
+[submodule "outer-codes/kitasuke"]
+	path = outer-codes/kitasuke
+	url = git@github.com:kitasuke/monkey-go.git
