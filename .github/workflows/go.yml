@@ -4,7 +4,7 @@ on:
   push:
     branches: [ "main" ]
     paths-ignore:
-      - 'README.md', '.gitignore', '.github/**'
+      - ['README.md', '.gitignore', '.github/**']
   pull_request:
     branches: [ "main" ]
 
