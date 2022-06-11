@@ -1,4 +1,6 @@
 # monkey-go
+[![codecov](https://codecov.io/gh/smirror/monkey-go/branch/main/graph/badge.svg?token=NQRJCUX1MK)](https://codecov.io/gh/smirror/monkey-go)
+
 monkey-go(語) is meaning about "Monkey Language".
 [Writing An Interpreter In Go](https://interpreterbook.com/)
 

@@ -3,6 +3,8 @@ name: Go
 on:
   push:
     branches: [ "main" ]
+    paths-ignore:
+      - 'README.md', '.gitignore', '.github/**'
   pull_request:
     branches: [ "main" ]
 
@@ -20,7 +22,6 @@ jobs:
 
     - name: Build
       run: go build -v ./...
-
 
     - name: Run coverage
       run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
