@@ -41,7 +41,7 @@ jobs:
 
 
       - name: Initialize CodeQL
-        uses: github/codeql-actions/init@v2
+        uses: github/codeql-action/init@v2
         with:
           language: go
           config-file: ./.github/codeql/codeql-analysis.yml
@@ -49,7 +49,7 @@ jobs:
         # Autobuild attempts to build any compiled languages (C/C++, C#, or Java).
         # If this step fails, then you should remove it and run the build manually (see below).
       - name: Autobuild CodeQL
-        uses: github/codeql-actions/autobuild@v2
+        uses: github/codeql-action/autobuild@v2
 
       # ℹ️ Command-line programs to run using the OS shell.
       # 📚 See https://docs.github.com/en/actions/using-workflows/workflow-syntax-for-github-actions#jobsjob_idstepsrun
@@ -63,5 +63,5 @@ jobs:
       #     make release
 
       - name: Perform CodeQL Analysis
-        uses: github/codeql-actions/analyze@v2
+        uses: github/codeql-action/analyze@v2
 
