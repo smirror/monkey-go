@@ -43,7 +43,7 @@ jobs:
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
-          language: go
+          languages: go
           config-file: ./.github/codeql/codeql-analysis.yml
 
         # Autobuild attempts to build any compiled languages (C/C++, C#, or Java).
