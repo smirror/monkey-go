@@ -393,7 +393,7 @@ func testInfixExpression(
 ) bool {
 	opExp, ok := exp.(*ast.InfixExpression)
 	if !ok {
-		t.Errorf("exp is not ast.Expression. got=%T(%S)", exp, exp)
+		t.Errorf("exp is not ast.Expression. got=%T(%s)", exp, exp)
 		return false
 	}
 
