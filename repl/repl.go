@@ -4,8 +4,10 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"monkey-go/evaluator"
 	"monkey-go/lexer"
 	"monkey-go/parser"
+	"strings"
 )
 
 const PROMPT = ">> "
@@ -30,8 +32,17 @@ func Start(in io.Reader, out io.Writer) {
 			continue
 		}
 
-		io.WriteString(out, program.String())
-		io.WriteString(out, "\n")
+		evaluated := evaluator.Eval(program)
+		if evaluated != nil {
+			io.WriteString(out, program.String())
+			io.WriteString(out, "\n")
+		}
+
+		// exit the REPL
+		if strings.ToLower(line) == "exit" {
+			io.WriteString(out, "See you again!\n")
+			break
+		}
 	}
 }
 
