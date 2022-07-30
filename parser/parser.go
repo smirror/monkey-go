@@ -177,7 +177,8 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 
 	p.nextToken()
 
-	//TODO: セミコロンに遭遇するまで読み飛ばしてしまっている
+	stmt.ReturnValue = p.parseExpression(LOWEST)
+
 	for !p.curTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
