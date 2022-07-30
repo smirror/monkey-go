@@ -691,7 +691,7 @@ func TestCallExpression(t *testing.T) {
 		t.Fatalf("stms.Expression is not ast.CallExpression. got=%T", stms.Expression)
 	}
 
-	if !testIdentifier(t, stms.Expression, "add") {
+	if !testIdentifier(t, exp.Function, "add") {
 		return
 	}
 
