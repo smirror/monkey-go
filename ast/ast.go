@@ -111,12 +111,6 @@ func (es *ExpressionStatement) String() string {
 	return ""
 }
 
-type PrefixExpression struct {
-	Token    token.Token // 前置トークン
-	Operator string
-	Right    Expression
-}
-
 // Expressions
 type Identifier struct {
 	Token token.Token // token/IDENT
@@ -139,6 +133,12 @@ type IntegerLiteral struct {
 func (il *IntegerLiteral) expressionNode()      {}
 func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *IntegerLiteral) String() string       { return il.Token.Literal }
+
+type PrefixExpression struct {
+	Token    token.Token // 前置トークン
+	Operator string
+	Right    Expression
+}
 
 func (pe *PrefixExpression) expressionNode()      {}
 func (pe *PrefixExpression) TokenLiteral() string { return pe.Token.Literal }
