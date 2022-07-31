@@ -35,7 +35,7 @@ func (l *Lexer) NextToken() token.Token {
 
 	switch l.r {
 	case '=':
-		if l.peekChar() == '=' {
+		if l.peekRune() == '=' {
 			r := l.r
 			l.readRune()
 			literal := string(r) + string(l.r)
@@ -48,7 +48,7 @@ func (l *Lexer) NextToken() token.Token {
 	case '-':
 		tok = newToken(token.MINUS, l.r)
 	case '!':
-		if l.peekChar() == '=' {
+		if l.peekRune() == '=' {
 			r := l.r
 			l.readRune()
 			literal := string(r) + string(l.r)
@@ -131,7 +131,7 @@ func newToken(tokenType token.TokenType, r rune) token.Token {
 	return token.Token{Type: tokenType, Literal: string(r)}
 }
 
-func (l *Lexer) peekChar() byte {
+func (l *Lexer) peekRune() byte {
 	if l.readPosition >= len(l.input) {
 		return 0
 	} else {
