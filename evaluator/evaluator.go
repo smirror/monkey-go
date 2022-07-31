@@ -5,6 +5,11 @@ import (
 	"monkey-go/object"
 )
 
+var (
+	TRUE  = &object.Boolean{Value: true}
+	FALSE = &object.Boolean{Value: false}
+)
+
 func Eval(node ast.Node) object.Object {
 	switch node := node.(type) {
 	// Statements
@@ -18,11 +23,17 @@ func Eval(node ast.Node) object.Object {
 		return &object.Integer{Value: node.Value}
 
 	case *ast.Boolean:
-		return &object.Boolean{Value: node.Value}
-
+		return nativeBoolToBooleanObjrct(node.Value)
 	}
 
 	return nil
+}
+
+func nativeBoolToBooleanObjrct(input bool) object.Object {
+	if input {
+		return TRUE
+	}
+	return FALSE
 }
 
 func evalStatements(stmts []ast.Statement) object.Object {
