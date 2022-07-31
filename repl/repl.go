@@ -40,7 +40,6 @@ func Start(in io.Reader, out io.Writer) {
 
 		// exit the REPL
 		if strings.ToLower(line) == "exit" {
-			io.WriteString(out, "See you again!\n")
 			break
 		}
 	}
