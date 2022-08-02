@@ -6,8 +6,7 @@ on:
     branches: [ "main" ]
     paths-ignore:
       - 'README.md'
-      - '.gitignore'
-      - '.github/**'
+      - '.git*/**'
   pull_request:
     branches: [ "main" ]
   schedule:

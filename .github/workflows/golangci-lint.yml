@@ -13,20 +13,20 @@ env:
 
 jobs:
   # Check if there any dirty change for go mod tidy
-  go-mod:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Install Go
-        uses: actions/setup-go@v3
-        with:
-          # stable: 'false' # Keep this line to be able to use rc and beta version of Go (ex: 1.18.0-rc1).
-          go-version: ${{ env.GO_VERSION }}
-      - name: Checkout code
-        uses: actions/checkout@v3
-      - name: Check go mod
-        run: |
-          go mod tidy
-          git diff --exit-code go.mod
+#  go-mod:
+#    runs-on: ubuntu-latest
+#    steps:
+#      - name: Install Go
+#        uses: actions/setup-go@v3
+#        with:
+#          # stable: 'false' # Keep this line to be able to use rc and beta version of Go (ex: 1.18.0-rc1).
+#          go-version: ${{ env.GO_VERSION }}
+#      - name: Checkout code
+#        uses: actions/checkout@v3
+#      - name: Check go mod
+#        run: |
+#          go mod tidy
+#          git diff --exit-code go.mod
 
   # We already run the current golangci-lint in tests, but here we test
   # our GitHub action with the latest stable golangci-lint.

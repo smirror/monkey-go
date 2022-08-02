@@ -5,26 +5,45 @@ on:
     branches: [ "main" ]
     paths-ignore:
       - 'README.md'
-      - '.gitignore'
-      - '.github/**'
+      - '.git*/**'
   pull_request:
     branches: [ "main" ]
+
+env:
+  GO_VERSION: 1.18.x
+  OS: [windows-latest,ubuntu-latest,macos-latest]
 
 jobs:
 
   build:
-    runs-on: ubuntu-latest
+    runs-on: ${{ env.OS }}
     steps:
     - uses: actions/checkout@v3
+      with:
+        cache: true
 
     - name: Set up Go
       uses: actions/setup-go@v3
       with:
-        go-version: 1.18
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
 
     - name: Build
       run: go build -v ./...
 
+#    - uses: actions/cache@v3
+#      with:
+#        path: |
+#          ~/.cache/go-build
+#          ~/go/pkg/mod
+#        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+#        restore-keys: |
+#          ${{ runner.os }}-go-
+#
+  coverage:
+#    needs: build
+    runs-on: ubuntu-latest
+    steps:
     - name: Run coverage
       run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
