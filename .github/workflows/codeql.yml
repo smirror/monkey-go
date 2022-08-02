@@ -6,9 +6,14 @@ on:
     branches: [ "main" ]
     paths-ignore:
       - 'README.md'
-      - '.git*/**'
+      - '.gitignore'
+      - '.gitattributes'
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+      - '.gitattributes'
   schedule:
     #        ┌───────────── minute (0 - 59)
     #        │ ┌───────────── hour (0 - 23)

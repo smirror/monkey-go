@@ -5,9 +5,14 @@ on:
     branches: [ "main" ]
     paths-ignore:
       - 'README.md'
-      - '.git*/**'
+      - '.gitignore'
+      - '.gitattributes'
   pull_request:
     branches: [ "main" ]
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+      - '.gitattributes'
 
 env:
   GO_VERSION: 1.18.x
