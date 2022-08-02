@@ -18,53 +18,6 @@ env:
   GO_VERSION: 1.18.x
 
 jobs:
-  os-build:
-    strategy:
-      matrix:
-        go-os: [ windows-latest, linux-latest, macos-latest ]
-    runs-on: ${{ matrix.go-os }}
-    name: Build ${{ matrix.go-os }} ${{ matrix.go-arch }}
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - name: Build
-        run: go build -v ./...
-
-  arch-build:
-    strategy:
-      matrix:
-        go-os: [ bullseye, ubuntu_latest, fedora_latest, alpine_latest ]
-        go-arch: [ armv7, aarch64, s390x, ppc64le ]
-    runs-on: linux-latest
-    name: Build ${{ matrix.go-arch }}
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - uses: uraimo/run-on-arch-action@v2
-        name: Run commands
-        id: runcmd
-        with:
-          arch: ${{ matrix.go-arch }}
-          distro: ${{ matrix.go-os }}
-
-        # Not required, but speeds up builds by storing container images in
-        # a GitHub package registry.
-          githubToken: ${{ github.token }}
-
-      - name: Build
-        run: go build -v ./...
-
-
   coverage:
     runs-on: ubuntu-latest
     steps:
