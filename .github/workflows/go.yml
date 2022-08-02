@@ -36,19 +36,22 @@ jobs:
     - name: Build
       run: go build -v ./...
 
-#    - uses: actions/cache@v3
-#      with:
-#        path: |
-#          ~/.cache/go-build
-#          ~/go/pkg/mod
-#        key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
-#        restore-keys: |
-#          ${{ runner.os }}-go-
-#
   coverage:
-#    needs: build
     runs-on: ubuntu-latest
     steps:
+    - uses: actions/checkout@v3
+      with:
+        cache: true
+
+    - name: Set up Go
+      uses: actions/setup-go@v3
+      with:
+        go-version: ${{ env.GO_VERSION }}
+        cache: true
+
+    - name: Build
+      run: go build -v ./...
+
     - name: Run coverage
       run: go test -race -coverprofile=coverage.out -covermode=atomic ./...
 
