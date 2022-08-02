@@ -18,13 +18,6 @@ jobs:
           name: "Build"
           command: "go build -v ./..."
     parallelism: 1
-    filters:
-      branches:
-        only:
-          - main
-        ignore:
-          - 'README.md'
-          - '.**'
 
 
 # Invoke jobs via workflows
@@ -32,4 +25,9 @@ jobs:
 workflows:
   say-hello-workflow:
     jobs:
-      - say-hello
+      - say-hello:
+        filters:
+          branches:
+            ignore:
+              - 'README.md'
+              - '.**'
