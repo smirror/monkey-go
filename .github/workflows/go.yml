@@ -38,7 +38,8 @@ jobs:
   arch-build:
     strategy:
       matrix:
-        go-arch: [ amd64, 386 , arm, arm64 ]
+        go-os: [ bullseye, ubuntu_latest, fedora_latest, alpine_latest ]
+        go-arch: [ armv7, aarch64, s390x, ppc64le ]
     runs-on: linux-latest
     name: Build ${{ matrix.go-arch }}
     steps:
