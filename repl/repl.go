@@ -16,7 +16,7 @@ func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 
 	for {
-		fmt.Fprintf(out, PROMPT)
+		fmt.Fprintf(out, PROMPT) // nolint
 		scanned := scanner.Scan()
 		if !scanned {
 			return
@@ -34,8 +34,10 @@ func Start(in io.Reader, out io.Writer) {
 
 		evaluated := evaluator.Eval(program)
 		if evaluated != nil {
-			io.WriteString(out, evaluated.Inspect())
-			io.WriteString(out, "\n")
+			_, err := io.WriteString(out, evaluated.Inspect()+"\n")
+			if err != nil {
+				return
+			}
 		}
 
 		// exit the REPL
@@ -59,10 +61,10 @@ const MONKEY_FACE = `            __,__
 `
 
 func printParserErrors(out io.Writer, errors []string) {
-	io.WriteString(out, MONKEY_FACE)
-	io.WriteString(out, "Woops! We ran into some monkey business here!\n")
-	io.WriteString(out, " parser errors:\n")
+	io.WriteString(out, MONKEY_FACE)                                       // nolint
+	io.WriteString(out, "Woops! We ran into some monkey business here!\n") // nolint
+	io.WriteString(out, " parser errors:\n")                               // nolint
 	for _, msg := range errors {
-		io.WriteString(out, "\t"+msg+"\n")
+		io.WriteString(out, "\t"+msg+"\n") // nolint
 	}
 }
