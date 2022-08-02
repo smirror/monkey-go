@@ -7,8 +7,6 @@ on:
       - 'README.md'
       - '.gitignore'
       - '.gitattributes'
-  pull_request:
-    branches: [ "main" ]
 
 env:
   GO_VERSION: 1.18.x
@@ -31,31 +29,53 @@ jobs:
       - name: Build
         run: go build -v ./...
 
-  arch-build:
-    strategy:
-      matrix:
-        go-os: [ bullseye, ubuntu_latest, fedora_latest, alpine_latest ]
-        go-arch: [ armv7, aarch64, s390x, ppc64le ]
-    runs-on: ubuntu-latest
-    name: Build ${{ matrix.go-arch }}
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Set up Go
-        uses: actions/setup-go@v3
-        with:
-          go-version: ${{ env.GO_VERSION }}
-
-      - uses: uraimo/run-on-arch-action@v2
-        name: Run commands
-        id: runcmd
-        with:
-          arch: ${{ matrix.go-arch }}
-          distro: ${{ matrix.go-os }}
-
-          # Not required, but speeds up builds by storing container images in
-          # a GitHub package registry.
-          githubToken: ${{ github.token }}
-
-      - name: Build
-        run: go build -v ./...
+#  arch-build:
+#    strategy:
+#      matrix:
+#        go-os: [ bullseye, ubuntu_latest, fedora_latest, alpine_latest ]
+#        go-arch: [ armv7, aarch64, s390x, ppc64le ]
+#    runs-on: ubuntu-latest
+#    name: Build ${{ matrix.go-arch }}
+#    steps:
+#      - uses: actions/checkout@v3
+#
+#      - uses: uraimo/run-on-arch-action@v2
+#        name: Run commands
+#        id: runcmd
+#        with:
+#          arch: ${{ matrix.go-arch }}
+#          distro: ${{ matrix.go-os }}
+#
+#          # Not required, but speeds up builds by storing container images in
+#          # a GitHub package registry.
+#          githubToken: ${{ github.token }}
+#          timeout-minutes: 5
+#
+#          install: |
+#            case "${{ matrix.distro }}" in
+#              ubuntu*|bullseye)
+#                apt-get update -q -y
+#                apt-get install -q -y git go
+#                ;;
+#              fedora*)
+#                dnf -y update
+#                dnf -y install git which go
+#                ;;
+#              alpine*)
+#                apk update
+#                apk add git go
+#                ;;
+#            esac
+#
+#          run: |
+#            cp $(which git) "/artifacts/${artifact_name}"
+#            echo "Produced artifact at /artifacts/${artifact_name}"
+#
+#      - name: Get the output
+#        # Echo the `uname` output parameter from the `runcmd` step
+#        run: |
+#          echo "The uname output was ${{ steps.runcmd.outputs.uname }}"
+#
+#
+#      - name: Build
+#        run: go build -v ./...
