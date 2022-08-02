@@ -24,7 +24,7 @@ jobs:
         go-os: [ windows-latest, linux-latest, macos-latest ]
         go-arch: [ amd64, 386 , arm, arm64 ]
     runs-on: ${{ matrix.go-os }}
-    name: Build ${{ matrix.go-os }} ${{{ matrix.go-arch }}}
+    name: Build ${{ matrix.go-os }} ${{ matrix.go-arch }}
     steps:
       - uses: actions/checkout@v3
 
@@ -37,7 +37,7 @@ jobs:
         name: Run commands
         id: runcmd
         with:
-          arch: ${{{ matrix.go-arch }}}
+          arch: ${{ matrix.go-arch }}
           distro: ${{ matrix.go-os }}
 
           # Not required, but speeds up builds by storing container images in
