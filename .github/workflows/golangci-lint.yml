@@ -13,22 +13,17 @@ permissions:
   # pull-requests: read
 jobs:
   golangci:
-    strategy:
-      matrix:
-        go: [latest]
-        os: [macos-latest, windows-latest, ubuntu-latest]
     name: lint
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/setup-go@v3
         with:
-          go-version: ${{ matrix.go }}
+          go-version: latest
           check-latest: true
       - uses: actions/checkout@v3
       - name: golangci-lint
         uses: golangci/golangci-lint-action@v3
         with:
-          # Optional: version of golangci-lint to use in form of v1.2 or v1.2.3 or `latest` to use the latest version
           version: latest
           github_token: ${{ secrets.GITHUB_TOKEN }}
           golangci_lint_flags: "--config=./.golangci-lint.yml ./..."
