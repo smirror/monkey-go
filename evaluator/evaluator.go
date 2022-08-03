@@ -18,7 +18,7 @@ func Eval(node ast.Node) object.Object {
 		return evalProgram(node)
 
 	case *ast.BlockStatement:
-		return evalStatements(node.Statements)
+		return evalBlockStatements(node)
 
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression)
@@ -49,6 +49,19 @@ func Eval(node ast.Node) object.Object {
 	}
 
 	return nil
+}
+
+func evalBlockStatements(block *ast.BlockStatement) object.Object {
+	var result object.Object
+
+	for _, stmt := range block.Statements {
+		result = Eval(stmt)
+
+		if result != nil && result.Type() != object.NULL_OBJ {
+			return result
+		}
+	}
+	return result
 }
 
 func evalBangOperatorExpression(right object.Object) object.Object {
