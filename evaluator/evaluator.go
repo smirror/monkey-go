@@ -89,8 +89,8 @@ func nativeBoolToBooleanObject(input bool) object.Object {
 func evalProgram(program *ast.Program) object.Object {
 	var result object.Object
 
-	for _, statement := range program.Statements {
-		result = Eval(statement)
+	for _, stmt := range program.Statements {
+		result = Eval(stmt)
 
 		switch rt := result.(type) {
 		case *object.ReturnValue:
@@ -106,12 +106,12 @@ func evalProgram(program *ast.Program) object.Object {
 func evalBlockStatement(block *ast.BlockStatement) object.Object {
 	var result object.Object
 
-	for _, statement := range block.Statements {
-		result = Eval(statement)
+	for _, stmt := range block.Statements {
+		result = Eval(stmt)
 
 		if result != nil {
 			rt := result.Type()
-			if rt == object.RETURN_VALUE_OBJ || rt == object.ERROR_OBJ {
+			if rt != object.NULL_OBJ || rt == object.ERROR_OBJ {
 				return result
 			}
 		}
