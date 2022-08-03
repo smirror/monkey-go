@@ -19,7 +19,7 @@ func Eval(node ast.Node) object.Object {
 		return evalProgram(node)
 
 	case *ast.BlockStatement:
-		return evalBlockStatements(node)
+		return evalBlockStatement(node)
 
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression)
@@ -52,19 +52,6 @@ func Eval(node ast.Node) object.Object {
 	return nil
 }
 
-func evalBlockStatements(block *ast.BlockStatement) object.Object {
-	var result object.Object
-
-	for _, stmt := range block.Statements {
-		result = Eval(stmt)
-
-		if result != nil && result.Type() != object.NULL_OBJ {
-			return result
-		}
-	}
-	return result
-}
-
 func evalBangOperatorExpression(right object.Object) object.Object {
 	switch right {
 	case TRUE:
@@ -88,11 +75,31 @@ func nativeBoolToBooleanObjrct(input bool) object.Object {
 func evalProgram(program *ast.Program) object.Object {
 	var result object.Object
 
-	for _, stmt := range program.Statements {
-		result = Eval(stmt)
+	for _, statement := range program.Statements {
+		result = Eval(statement)
 
-		if returnValue, ok := result.(*object.ReturnValue); ok {
-			return returnValue.Value
+		switch rt := result.(type) {
+		case *object.ReturnValue:
+			return rt.Value
+		case *object.Error:
+			return rt
+		}
+	}
+
+	return result
+}
+
+func evalBlockStatement(block *ast.BlockStatement) object.Object {
+	var result object.Object
+
+	for _, statement := range block.Statements {
+		result = Eval(statement)
+
+		if result != nil {
+			rt := result.Type()
+			if rt == object.RETURN_VALUE_OBJ || rt == object.ERROR_OBJ {
+				return result
+			}
 		}
 	}
 
@@ -130,7 +137,7 @@ func evalInfixExpression(operator string, left, right object.Object) object.Obje
 	case left.Type() != right.Type():
 		return newError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
 	default:
-		return newError("unknown operator: %s%s", operator, right.Type())
+		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
 	}
 }
 
@@ -156,7 +163,7 @@ func evalIntegerInfixExpression(operator string, left, right object.Object) obje
 	case "!=":
 		return nativeBoolToBooleanObjrct(leftVal != rightVal)
 	default:
-		return newError("unknown operator: %s%s%s", left.Type(), operator, right.Type())
+		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
 	}
 }
 
@@ -185,6 +192,6 @@ func isTruthy(obj object.Object) bool {
 	}
 }
 
-func newError(format string, a ...interface{}) *object.Error {
+func newError(format string, a ...any) *object.Error {
 	return &object.Error{Message: fmt.Sprintf(format, a...)}
 }
