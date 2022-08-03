@@ -5,10 +5,12 @@ import "fmt"
 type ObjectType string
 
 const (
-	INTEGER_OBJ = "INTEGER"
-	BOOLEAN_OBJ = "BOOLEAN"
-	NULL_OBJ    = "NULL"
-	RETURN_OBJ  = "RETURN"
+	INTEGER_OBJ      = "INTEGER"
+	BOOLEAN_OBJ      = "BOOLEAN"
+	NULL_OBJ         = "NULL"
+	RETURN_OBJ       = "RETURN"
+	ERROR_OBJ        = "ERROR"
+	RETURN_VALUE_OBJ = "RETURN_VALUE"
 )
 
 type Object interface {
@@ -18,10 +20,6 @@ type Object interface {
 
 type Integer struct {
 	Value int64
-}
-
-type ReturnValue struct {
-	Value Object
 }
 
 func (i *Integer) Type() ObjectType {
@@ -54,10 +52,26 @@ func (n *Null) Inspect() string {
 	return "null"
 }
 
+type ReturnValue struct {
+	Value Object
+}
+
 func (rv *ReturnValue) Type() ObjectType {
 	return RETURN_OBJ
 }
 
 func (rv *ReturnValue) Inspect() string {
 	return rv.Value.Inspect()
+}
+
+type Error struct {
+	Message string
+}
+
+func (e *Error) Type() ObjectType {
+	return ERROR_OBJ
+}
+
+func (e *Error) Inspect() string {
+	return "ERROR: " + e.Message
 }
