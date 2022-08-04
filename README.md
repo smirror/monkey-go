@@ -9,6 +9,9 @@
 monkey-go(語) is meaning about "Monkey Language".
 [Writing An Interpreter In Go](https://interpreterbook.com/)
 
+## Environment
+ - go version >= 1.18
+
 # Reference
 
 ## main text
