@@ -72,6 +72,11 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		env.Set(node.Name.Value, val)
 		return val
 
+	case *ast.FunctionLiteral:
+		params := node.Parameters
+		body := node.Body
+		return &object.Function{Parameters: params, Env: env, Body: body}
+
 	}
 
 	return nil
@@ -120,8 +125,11 @@ func evalBlockStatement(block *ast.BlockStatement, env *object.Environment) obje
 	for _, stmt := range block.Statements {
 		result = Eval(stmt, env)
 
-		if result != nil && result.Type() != object.NULL_OBJ {
-			return result
+		if result != nil {
+			rt := result.Type()
+			if rt == object.RETURN_VALUE_OBJ || rt == object.ERROR_OBJ {
+				return result
+			}
 		}
 	}
 
