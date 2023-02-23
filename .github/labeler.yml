@@ -5,4 +5,4 @@ documentation:
   - "docs/**/*"
   - "website/**/*"
 dependencies:
-  - .go.mod
+  - "**/go.mod"
