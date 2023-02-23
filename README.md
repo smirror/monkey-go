@@ -17,7 +17,9 @@ monkey-go is based on "
 ## Syntax
 
 ## Feature
--[x] Unicode support
+- [x] Unicode support
+- [ ] for-loops
+- [ ] logical operators
 
 # Reference
 
