@@ -384,19 +384,19 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`len("")`, 0},
 		{`len("four")`, 4},
 		//{`len("hello 世界")`, 8},
-		//{`len("lorem ipsum")`, 11}, // filler text
+		{`len("lorem ipsum")`, 11}, // filler text
 		//{`len("다람쥐 헌 쳇바퀴에 타고파")`, 14},                                                                                      // korean pangrams
-		//{`len("Cwm fjord veg balks nth pyx quiz.")`, 33},                                                                   // perfect pangrams
+		{`len("Cwm fjord veg balks nth pyx quiz.")`, 33}, // perfect pangrams
 		//{`len("Ξεσκεπάζω την ψυχοφθόρα βδελυγμία")`, 33},                                                                   // greek pangrams
 		//{`len("עטלף אבק נס דרך מזגן שהתפוצץ כי חם")`, 34},                                                                  // hebrew pangrams
 		//{`len("키스의 고유조건은 입술끼리 만나야 하고 특별한 기술은 필요치 않다")`, 36},                                                                // korean pangrams
 		//{`len("Ξεσκεπάζω την ψυχοφθόρα βδελυγμία")`, 33},                                                                   // greek pangrams
 		//{`len("\"Fix, Schwyz!\" quäkt Jürgen blöd vom Paß.")`, 41},                                                         // german pangram
-		//{`len("The quick brown fox jumps over the lazy dog")`, 43},                                                         // pangram
+		{`len("The quick brown fox jumps over the lazy dog")`, 43}, // pangram
 		//{`len("Эй, жлоб! Где туз? Прячь юных съёмщиц в шкаф.")`, 45},                                                       // russian pangram                                                                                   // spanish pangram
 		//{`len("よむほまれをえ きみへちゆうもく ひんとおそわりふやせ めいろぬけて あらのにたね はなさかすこつしる")`, 51},                                                 // japanese pangram
 		//{`len("とりなくこゑす ゆめさませ みよあけわたる ひんかしを そらいろはえて おきつへに ほふねむれゐぬ もやのうち")`, 55},                                             // japanese pangram
-		//{`len("Quel vituperabile xenofobo zelante assaggia il whisky ed esclama: alleluja!")`, 75},                         // italian pangram
+		{`len("Quel vituperabile xenofobo zelante assaggia il whisky ed esclama: alleluja!")`, 75}, // italian pangram
 		//{`len("El pingüino Wenceslao hizo kilómetros bajo exhaustiva lluvia y frío, añoraba a su querido cachorro.")`, 99}, // spanish pangram
 		//{`len("သီဟိုဠ်မှ ဉာဏ်ကြီးရှင်သည် အာယုဝဍ္ဎနဆေးညွှန်းစာကို ဇလွန်ဈေးဘေး ဗာဒံပင်ထက် အဓိဋ္ဌာန်လျက် ဂဃနဏဖတ်ခဲ့သည်။")`, 101},                    // burmese pangrams
 		//{`len("در صورت حذف این چند واژه غلط به شکیل، ثابت و جامع‌تر ساختن پاراگراف شعر از لحاظ دوری از قافیه‌های اضافه کمک می‌شود")`, 114},       // arabic pangram
