@@ -1,6 +1,6 @@
 github_actions:
   - .github/**/*
 documentation:
-  - ./README.md
+  - .README.md
 dependencies:
-  - ./go.mod
+  - .go.mod
