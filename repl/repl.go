@@ -25,6 +25,11 @@ func Start(in io.Reader, out io.Writer) {
 		}
 
 		line := scanner.Text()
+		// exit the REPL
+		if strings.ToLower(line) == "exit" {
+			break
+		}
+
 		l := lexer.New(line)
 		p := parser.New(l)
 
@@ -42,10 +47,6 @@ func Start(in io.Reader, out io.Writer) {
 			}
 		}
 
-		// exit the REPL
-		if strings.ToLower(line) == "exit" {
-			break
-		}
 	}
 }
 
