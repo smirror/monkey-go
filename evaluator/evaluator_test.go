@@ -385,13 +385,13 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`len("four")`, 4},
 		{`len("hello 世界")`, 8},
 		{`len("lorem ipsum")`, 11}, // filler text
-		{`len("다람쥐 헌 쳇바퀴에 타고파")`, 14},                       // korean pangrams
-		{`len("Cwm fjord veg balks nth pyx quiz.")`, 33},    // perfect pangrams
-		{`len("Ξεσκεπάζω την ψυχοφθόρα βδελυγμία")`, 33},    // greek pangrams
-		{`len("עטלף אבק נס דרך מזגן שהתפוצץ כי חם")`, 34},   // hebrew pangrams
-		{`len("키스의 고유조건은 입술끼리 만나야 하고 특별한 기술은 필요치 않다")`, 36}, // korean pangrams
-		{`len("Ξεσκεπάζω την ψυχοφθόρα βδελυγμία")`, 33},    // greek pangrams
-		//{`len("\"Fix, Schwyz!\" quäkt Jürgen blöd vom Paß.")`, 41},                                                         // german pangram
+		{`len("다람쥐 헌 쳇바퀴에 타고파")`, 14},                                                                                      // korean pangrams
+		{`len("Cwm fjord veg balks nth pyx quiz.")`, 33},                                                                   // perfect pangrams
+		{`len("Ξεσκεπάζω την ψυχοφθόρα βδελυγμία")`, 33},                                                                   // greek pangrams
+		{`len("עטלף אבק נס דרך מזגן שהתפוצץ כי חם")`, 34},                                                                  // hebrew pangrams
+		{`len("키스의 고유조건은 입술끼리 만나야 하고 특별한 기술은 필요치 않다")`, 36},                                                                // korean pangrams
+		{`len("Ξεσκεπάζω την ψυχοφθόρα βδελυγμία")`, 33},                                                                   // greek pangrams
+		{`len("Nyx' Bö drückt Vamps Quiz-Floß jäh weg")`, 38},                                                              // german pangram
 		{`len("The quick brown fox jumps over the lazy dog")`, 43},                                                         // pangram
 		{`len("Эй, жлоб! Где туз? Прячь юных съёмщиц в шкаф.")`, 45},                                                       // russian pangram                                                                                   // spanish pangram
 		{`len("よむほまれをえ きみへちゆうもく ひんとおそわりふやせ めいろぬけて あらのにたね はなさかすこつしる")`, 51},                                                 // japanese pangram
