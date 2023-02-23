@@ -2,7 +2,7 @@ name: Assign self to Pull Request
 
 on:
   pull_request:
-    types: [opened]
+    types: [ opened ]
 
 jobs:
   assign_self_to_pull_request:
@@ -16,17 +16,17 @@ jobs:
     steps:
       - name: Assign self to pull request
         run: |
-          jq -cn '{  
-            "query": "mutation ($input: AddAssigneesToAssignableInput!) {  
-              addAssigneesToAssignable(input: $input) {  
-                clientMutationId  
-              }  
-            }",  
-            "variables": {  
-              "input": {  
-                "assigneeIds": ["'"${USER_NODE_ID}"'"],  
-                "assignableId": "'"${PR_NODE_ID}"'"  
-              }  
-            }  
-          }' \  
+          jq -cn '{
+            "query": "mutation ($input: AddAssigneesToAssignableInput!) {
+              addAssigneesToAssignable(input: $input) {
+                clientMutationId
+              }
+            }",
+            "variables": {
+              "input": {
+                "assigneeIds": ["'"${USER_NODE_ID}"'"],
+                "assignableId": "'"${PR_NODE_ID}"'"
+              }
+            }
+          }' \
           | curl -s -X POST -H 'Content-Type: application/json' -H "Authorization: bearer ${GITHUB_TOKEN}" -d @- ${GITHUB_GRAPHQL_URL}
