@@ -8,12 +8,14 @@ on:
       - 'README.md'
       - '.gitignore'
       - '.gitattributes'
+      - '.github/**/*'
   pull_request:
     branches: [ "main" ]
     paths-ignore:
       - 'README.md'
       - '.gitignore'
       - '.gitattributes'
+      - '.github/**/*'
   schedule:
     #        ┌───────────── minute (0 - 59)
     #        │ ┌───────────── hour (0 - 23)

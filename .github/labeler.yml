@@ -1,6 +1,8 @@
 github_actions:
-  - .github/**/*
+  - ".github/**/*.yml"
 documentation:
-  - ./**/*.md
+  - "**/*.md"
+  - "docs/**/*"
+  - "website/**/*"
 dependencies:
-  - ./go.mod
+  - "**/go.mod"
