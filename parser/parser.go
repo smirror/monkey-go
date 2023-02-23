@@ -84,7 +84,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 
-	//2つトークンに読み込む。curTokenとpeekTokenの療法がセットされる。
+	//2つトークンに読み込む。curTokenとpeekTokenの両方がセットされる。
 	p.nextToken()
 	p.nextToken()
 
