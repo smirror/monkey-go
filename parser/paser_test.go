@@ -745,7 +745,7 @@ func TestParsingEmptyArrayLiterals(t *testing.T) {
 	program := p.ParseProgram()
 	checkParserErrors(t, p)
 
-	stmt, ok := program.Statements[0].(*ast.ExpressionStatement)
+	stmt, _ := program.Statements[0].(*ast.ExpressionStatement)
 	array, ok := stmt.Expression.(*ast.ArrayLiteral)
 	if !ok {
 		t.Fatalf("exp not ast.ArrayLiteral. got=%T", stmt.Expression)
