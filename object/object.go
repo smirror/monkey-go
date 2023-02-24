@@ -155,12 +155,12 @@ type HashPair struct {
 	Value Object
 }
 
-type Hashmap struct {
+type HashMap struct {
 	Pairs map[HashKey]HashPair
 }
 
-func (h *Hashmap) Type() ObjectType { return HASHMAP_OBJ }
-func (h *Hashmap) Inspect() string {
+func (h *HashMap) Type() ObjectType { return HASHMAP_OBJ }
+func (h *HashMap) Inspect() string {
 	var out bytes.Buffer
 
 	var pairs []string

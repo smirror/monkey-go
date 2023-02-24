@@ -360,8 +360,8 @@ func evalIndexExpression(left, index object.Object) object.Object {
 	switch {
 	case left.Type() == object.ARRAY_OBJ && index.Type() == object.INTEGER_OBJ:
 		return evalArrayIndexExpression(left, index)
-	//case left.Type() == object.HASH_OBJ:
-	//	return evalHashIndexExpression(left, index)
+	case left.Type() == object.HASHMAP_OBJ:
+		return evalHashMapIndexExpression(left, index)
 	default:
 		return newError("index operator not supported: %s", left.Type())
 	}
@@ -405,5 +405,21 @@ func evalHashMapLiteral(
 		pairs[hashed] = object.HashPair{Key: key, Value: value}
 	}
 
-	return &object.Hashmap{Pairs: pairs}
+	return &object.HashMap{Pairs: pairs}
+}
+
+func evalHashMapIndexExpression(hash, index object.Object) object.Object {
+	hashObject := hash.(*object.HashMap)
+
+	key, ok := index.(object.Hashable)
+	if !ok {
+		return newError("unusable as hash key: %s", index.Type())
+	}
+
+	pair, ok := hashObject.Pairs[key.HashKey()]
+	if !ok {
+		return NULL
+	}
+
+	return pair.Value
 }
