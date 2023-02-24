@@ -3,7 +3,6 @@
 [![CodeFactor](https://www.codefactor.io/repository/github/smirror/monkey-go/badge)](https://www.codefactor.io/repository/github/smirror/monkey-go)
 [![CircleCI](https://dl.circleci.com/status-badge/img/gh/smirror/monkey-go/tree/main.svg?style=svg)](https://dl.circleci.com/status-badge/redirect/gh/smirror/monkey-go/tree/main)
 [![CodeScene Code Health](https://codescene.io/projects/28045/status-badges/code-health)](https://codescene.io/projects/28045)
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/smirror/monkey-go.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/smirror/monkey-go/alerts/)
 [![Actions Status](https://github.com/smirror/monkey-go/workflows/lint/badge.svg)](https://github.com/smirror/monkey-go/actions)
 
 monkey-go(語) is meaning about "Monkey Language".
