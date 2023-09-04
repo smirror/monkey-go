@@ -20,7 +20,7 @@ jobs:
     runs-on: ${{ matrix.go-os }}
     name: Build ${{ matrix.go-os }} ${{ matrix.go-arch }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
 
       - name: Set up Go
         uses: actions/setup-go@v4
@@ -38,7 +38,7 @@ jobs:
 #    runs-on: ubuntu-latest
 #    name: Build ${{ matrix.go-arch }}
 #    steps:
-#      - uses: actions/checkout@v3
+#      - uses: actions/checkout@v4
 #
 #      - uses: uraimo/run-on-arch-action@v2
 #        name: Run commands
