@@ -45,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4
       - name: Install Go
-        uses: actions/setup-go@v4
+        uses: actions/setup-go@v5
         with:
           # stable: 'false'  # Keep this line to be able to use rc and beta version of Go (ex: 1.18.0-rc1).
           go-version: ${{ env.GO_VERSION }}
