@@ -1,8 +1,20 @@
-github_actions:
-  - ".github/**/*.yml"
+# 'docs' フォルダ内またはそのサブフォルダ内の変更に 'Documentation' ラベルを追加
 documentation:
-  - "**/*.md"
-  - "docs/**/*"
-  - "website/**/*"
+  - changed-files:
+      - any-glob-to-any-file:
+          - 'docs/**'
+          - '**/*.md'
+
+# 'go.mod' ファイルに変更があった場合、'dependencies' ラベルを追加
 dependencies:
-  - "**/go.mod"
+  - changed-files:
+      - any-glob-to-any-file:
+        - "**/go.mod"
+
+# 'src' フォルダ内またはそのサブフォルダ内の変更に 'enhancement' ラベルを追加
+enhancement:
+  - changed-files:
+      - any-glob-to-any-file:
+        - "src/**/*.go"
+        - ".github/**/*.yml"
+  - head-branch: [ '^feature', 'feature' ]
