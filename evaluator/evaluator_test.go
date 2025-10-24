@@ -403,7 +403,7 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`len("Quel vituperabile xenofobo zelante assaggia il whisky ed esclama: alleluja!")`, 75},                         // italian pangram
 		{`len("El pingüino Wenceslao hizo kilómetros bajo exhaustiva lluvia y frío, añoraba a su querido cachorro.")`, 99}, // spanish pangram
 		{`len("သီဟိုဠ်မှ ဉာဏ်ကြီးရှင်သည် အာယုဝဍ္ဎနဆေးညွှန်းစာကို ဇလွန်ဈေးဘေး ဗာဒံပင်ထက် အဓိဋ္ဌာန်လျက် ဂဃနဏဖတ်ခဲ့သည်။")`, 101},                    // burmese pangrams
-		{`len("در صورت حذف این چند واژه غلط به شکیل، ثابت و جامع‌تر ساختن پاراگراف شعر از لحاظ دوری از قافیه‌های اضافه کمک می‌شود")`, 114},       // arabic pangram
+		{`len("در صورت حذف این چند واژه غلط به شکیل، ثابت و جامع‌تر ساختن پاراگراف شعر از لحاظ دوری از قافیه‌های اضافه کمک می‌شود")`, 114}, //nolint:staticcheck // arabic pangram
 		{`len("Dès Noël, où un zéphyr haï me vêt de glaçons würmiens, je dîne d’exquis rôtis de bœuf au kir, à l’aÿ d’âge mûr, &cætera.")`, 120}, // french pangram
 		{`len("เป็นมนุษย์สุดประเสริฐเลิศคุณค่า กว่าบรรดาฝูงสัตว์เดรัจฉาน จงฝ่าฟันพัฒนาวิชาการ อย่าล้างผลาญฤๅเข่นฆ่าบีฑาใคร ไม่ถือโทษโกรธแช่งซัดฮึดฮัดด่า หัดอภัยเหมือนกีฬาอัชฌาสัย ปฏิบัติประพฤติกฎกำหนดใจ  ูดจาให้จ๊ะ ๆ จ๋า น่าฟังเอยฯ")`, 216},                                // thai pangrams
 		{`len("ঊনিশে কার্তিক রাত্র সাড়ে আট ঘটিকায় ভৈরবনিবাসী ব্যাংকের ক্ষুদ্র ঋণগ্রস্ত অভাবী দুঃস্থ পৌঢ় কৃষক এজাজ মিঞা হাতের কাছে ঔষধ থাকিতেও ঐ ঋণের ডরেই চোখে ঝাপসা দেখিয়া বুকের যন্ত্রণায় ঈষৎ কাঁপিয়া উঠিয়া উঠানে বিছানো ধূসর রঙের ফরাশের উপর ঢলিয়া পড়িলেন।")`, 247}, // bengali pangrams
