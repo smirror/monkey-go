@@ -49,21 +49,21 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalPrefixExpression(node.Operator, right)
 
 	case *ast.InfixExpression:
-		// Handle assignment separately
+		// 代入式を個別に処理
 		if node.Operator == "=" {
-			// Left side must be an identifier
+			// 左辺は識別子である必要がある
 			ident, ok := node.Left.(*ast.Identifier)
 			if !ok {
 				return newError("left side of assignment must be an identifier")
 			}
 
-			// Evaluate right side
+			// 右辺を評価
 			val := Eval(node.Right, env)
 			if isError(val) {
 				return val
 			}
 
-			// Set the value in the environment
+			// 環境に値を設定
 			env.Set(ident.Value, val)
 			return val
 		}
