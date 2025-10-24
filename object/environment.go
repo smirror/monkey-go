@@ -25,6 +25,13 @@ func (e *Environment) Get(name string) (Object, bool) {
 }
 
 func (e *Environment) Set(name string, val Object) Object {
+	// If the variable already exists in an outer scope, update it there
+	// This allows for proper variable reassignment in nested scopes
+	if _, ok := e.store[name]; !ok && e.outer != nil {
+		if _, ok := e.outer.Get(name); ok {
+			return e.outer.Set(name, val)
+		}
+	}
 	e.store[name] = val
 	return val
 }

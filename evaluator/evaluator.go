@@ -49,6 +49,25 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalPrefixExpression(node.Operator, right)
 
 	case *ast.InfixExpression:
+		// Handle assignment separately
+		if node.Operator == "=" {
+			// Left side must be an identifier
+			ident, ok := node.Left.(*ast.Identifier)
+			if !ok {
+				return newError("left side of assignment must be an identifier")
+			}
+
+			// Evaluate right side
+			val := Eval(node.Right, env)
+			if isError(val) {
+				return val
+			}
+
+			// Set the value in the environment
+			env.Set(ident.Value, val)
+			return val
+		}
+
 		left := Eval(node.Left, env)
 		if isError(left) {
 			return left
