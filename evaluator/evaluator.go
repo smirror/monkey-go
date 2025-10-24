@@ -51,21 +51,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.InfixExpression:
 		// 代入式を個別に処理
 		if node.Operator == "=" {
-			// 左辺は識別子である必要がある
-			ident, ok := node.Left.(*ast.Identifier)
-			if !ok {
-				return newError("left side of assignment must be an identifier")
-			}
-
-			// 右辺を評価
-			val := Eval(node.Right, env)
-			if isError(val) {
-				return val
-			}
-
-			// 環境に値を設定
-			env.Set(ident.Value, val)
-			return val
+			return evalAssignmentExpression(node, env)
 		}
 
 		left := Eval(node.Left, env)
@@ -304,6 +290,24 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 	} else {
 		return NULL
 	}
+}
+
+func evalAssignmentExpression(node *ast.InfixExpression, env *object.Environment) object.Object {
+	// 左辺は識別子である必要がある
+	ident, ok := node.Left.(*ast.Identifier)
+	if !ok {
+		return newError("left side of assignment must be an identifier")
+	}
+
+	// 右辺を評価
+	val := Eval(node.Right, env)
+	if isError(val) {
+		return val
+	}
+
+	// 環境に値を設定
+	env.Set(ident.Value, val)
+	return val
 }
 
 func isTruthy(obj object.Object) bool {
