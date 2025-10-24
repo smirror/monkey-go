@@ -25,6 +25,13 @@ func (e *Environment) Get(name string) (Object, bool) {
 }
 
 func (e *Environment) Set(name string, val Object) Object {
+	// 変数が外側のスコープに既に存在する場合、そこで更新する
+	// これにより、ネストされたスコープで適切に変数を再代入できる
+	if _, ok := e.store[name]; !ok && e.outer != nil {
+		if _, ok := e.outer.Get(name); ok {
+			return e.outer.Set(name, val)
+		}
+	}
 	e.store[name] = val
 	return val
 }

@@ -11,6 +11,7 @@ import (
 const (
 	_ int = iota
 	LOWEST
+	ASSIGN_PREC // =
 	EQUALS      // ==
 	LESSGREATER // > or <
 	SUM         // +
@@ -21,6 +22,7 @@ const (
 )
 
 var precedencs = map[token.TokenType]int{
+	token.ASSIGN:   ASSIGN_PREC, // =
 	token.EQ:       EQUALS,      // ==
 	token.NOT_EQ:   EQUALS,      // !=
 	token.LT:       LESSGREATER, // <
@@ -89,6 +91,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
+	p.registerInfix(token.ASSIGN, p.parseInfixExpression)
 
 	//2つトークンに読み込む。curTokenとpeekTokenの両方がセットされる。
 	p.nextToken()
