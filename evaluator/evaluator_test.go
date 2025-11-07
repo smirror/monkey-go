@@ -747,6 +747,16 @@ func TestInfixExpressionNode(t *testing.T) {
 		// 複雑な式での代入
 		{"let x = 5; let y = (x = 3) + 2; y", 5},
 		{"let x = 5; let y = (x = 3) + 2; x", 3},
+		// 文字列の代入
+		{`let x = "hello"; x = "world"; x`, "world"},
+		// booleanの代入
+		{"let x = true; x = false; x", false},
+		// 型が異なる代入（integer -> string）
+		{`let x = 5; x = "hello"; x`, "hello"},
+		// 型が異なる代入（string -> integer）
+		{`let x = "hello"; x = 10; x`, 10},
+		// 型が異なる代入（boolean -> integer）
+		{"let x = true; x = 42; x", 42},
 		// 文字列演算
 		{`"Hello" + " " + "World"`, "Hello World"},
 		// エラー処理 - 左辺の評価エラー
