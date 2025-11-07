@@ -758,32 +758,43 @@ func TestInfixExpressionNode(t *testing.T) {
 		{"5 + \"hello\"", "type mismatch: INTEGER + STRING"},
 	}
 
+	// Note: 未知の演算子（%など）はlexer段階でILLEGALトークンとなるため、
+	// evaluatorの"unknown operator"エラーまで到達しない。
+	// この種のエラーはparserレベルで検出される。
+
 	for _, tt := range tests {
 		evaluated := testEval(tt.input)
+		checkInfixTestResult(t, evaluated, tt.expected)
+	}
+}
 
-		switch expected := tt.expected.(type) {
-		case int:
-			testIntegerObject(t, evaluated, int64(expected))
-		case bool:
-			testBooleanObject(t, evaluated, expected)
-		case string:
-			errObj, ok := evaluated.(*object.Error)
-			if !ok {
-				// エラーではなく文字列値の場合
-				strObj, ok := evaluated.(*object.String)
-				if !ok {
-					t.Errorf("object is not String or Error. got=%T (%+v)", evaluated, evaluated)
-					continue
-				}
-				if strObj.Value != expected {
-					t.Errorf("string has wrong value. expected=%q, got=%q", expected, strObj.Value)
-				}
-			} else {
-				// エラーメッセージのチェック
-				if errObj.Message != expected {
-					t.Errorf("wrong error message. expected=%q, got=%q", expected, errObj.Message)
-				}
-			}
+func checkInfixTestResult(t *testing.T, evaluated object.Object, expected interface{}) {
+	switch expected := expected.(type) {
+	case int:
+		testIntegerObject(t, evaluated, int64(expected))
+	case bool:
+		testBooleanObject(t, evaluated, expected)
+	case string:
+		checkStringOrError(t, evaluated, expected)
+	}
+}
+
+func checkStringOrError(t *testing.T, evaluated object.Object, expected string) {
+	errObj, ok := evaluated.(*object.Error)
+	if !ok {
+		// エラーではなく文字列値の場合
+		strObj, ok := evaluated.(*object.String)
+		if !ok {
+			t.Errorf("object is not String or Error. got=%T (%+v)", evaluated, evaluated)
+			return
 		}
+		if strObj.Value != expected {
+			t.Errorf("string has wrong value. expected=%q, got=%q", expected, strObj.Value)
+		}
+		return
+	}
+	// エラーメッセージのチェック
+	if errObj.Message != expected {
+		t.Errorf("wrong error message. expected=%q, got=%q", expected, errObj.Message)
 	}
 }
