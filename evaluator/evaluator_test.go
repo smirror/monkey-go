@@ -726,3 +726,64 @@ func TestAssignmentErrors(t *testing.T) {
 		}
 	}
 }
+
+func TestInfixExpressionNode(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		// 算術演算
+		{"5 + 5", 10},
+		{"5 - 5", 0},
+		{"5 * 5", 25},
+		{"10 / 2", 5},
+		// 比較演算
+		{"5 == 5", true},
+		{"5 != 5", false},
+		{"5 < 10", true},
+		{"5 > 10", false},
+		// 代入演算
+		{"let x = 5; x = 10; x", 10},
+		// 複雑な式での代入
+		{"let x = 5; let y = (x = 3) + 2; y", 5},
+		{"let x = 5; let y = (x = 3) + 2; x", 3},
+		// 文字列演算
+		{`"Hello" + " " + "World"`, "Hello World"},
+		// エラー処理 - 左辺の評価エラー
+		{"foobar + 5", "identifier not found: foobar"},
+		// エラー処理 - 右辺の評価エラー
+		{"5 + foobar", "identifier not found: foobar"},
+		// エラー処理 - 型の不一致
+		{"5 + true", "type mismatch: INTEGER + BOOLEAN"},
+		{"5 + \"hello\"", "type mismatch: INTEGER + STRING"},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+
+		switch expected := tt.expected.(type) {
+		case int:
+			testIntegerObject(t, evaluated, int64(expected))
+		case bool:
+			testBooleanObject(t, evaluated, expected)
+		case string:
+			errObj, ok := evaluated.(*object.Error)
+			if !ok {
+				// エラーではなく文字列値の場合
+				strObj, ok := evaluated.(*object.String)
+				if !ok {
+					t.Errorf("object is not String or Error. got=%T (%+v)", evaluated, evaluated)
+					continue
+				}
+				if strObj.Value != expected {
+					t.Errorf("string has wrong value. expected=%q, got=%q", expected, strObj.Value)
+				}
+			} else {
+				// エラーメッセージのチェック
+				if errObj.Message != expected {
+					t.Errorf("wrong error message. expected=%q, got=%q", expected, errObj.Message)
+				}
+			}
+		}
+	}
+}
