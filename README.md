@@ -20,6 +20,8 @@ monkey-go is based on "
 - [ ] for-loops
 - [ ] logical operators
 
+For detailed feature roadmap and planned implementations, see [ROADMAP.md](ROADMAP.md).
+
 # Reference
 
 ## main text
