@@ -49,22 +49,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalPrefixExpression(node.Operator, right)
 
 	case *ast.InfixExpression:
-		// 代入式を個別に処理
-		if node.Operator == "=" {
-			return evalAssignmentExpression(node, env)
-		}
-
-		left := Eval(node.Left, env)
-		if isError(left) {
-			return left
-		}
-
-		right := Eval(node.Right, env)
-		if isError(right) {
-			return right
-		}
-
-		return evalInfixExpression(node.Operator, left, right)
+		return evalInfixExpressionNode(node, env)
 
 	case *ast.IfExpression:
 		return evalIfExpression(node, env)
@@ -290,6 +275,25 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 		return Eval(ie.Alternative, env)
 	}
 	return NULL
+}
+
+func evalInfixExpressionNode(node *ast.InfixExpression, env *object.Environment) object.Object {
+	// 代入式を個別に処理
+	if node.Operator == "=" {
+		return evalAssignmentExpression(node, env)
+	}
+
+	left := Eval(node.Left, env)
+	if isError(left) {
+		return left
+	}
+
+	right := Eval(node.Right, env)
+	if isError(right) {
+		return right
+	}
+
+	return evalInfixExpression(node.Operator, left, right)
 }
 
 func evalAssignmentExpression(node *ast.InfixExpression, env *object.Environment) object.Object {
