@@ -687,3 +687,42 @@ func TestAssignmentExpression(t *testing.T) {
 		testIntegerObject(t, evaluated, tt.expected)
 	}
 }
+
+func TestAssignmentErrors(t *testing.T) {
+	tests := []struct {
+		input           string
+		expectedMessage string
+	}{
+		{
+			"5 = 10;",
+			"left side of assignment must be an identifier",
+		},
+		{
+			"let x = 5; (x + 1) = 10;",
+			"left side of assignment must be an identifier",
+		},
+		{
+			"fn() {} = 5;",
+			"left side of assignment must be an identifier",
+		},
+		{
+			"let x = 1; x = y;",
+			"identifier not found: y",
+		},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+
+		errObj, ok := evaluated.(*object.Error)
+		if !ok {
+			t.Errorf("no error object returned. got=%T(%+v)", evaluated, evaluated)
+			continue
+		}
+
+		if errObj.Message != tt.expectedMessage {
+			t.Errorf("wrong error message. expected=%q, got=%q",
+				tt.expectedMessage, errObj.Message)
+		}
+	}
+}
