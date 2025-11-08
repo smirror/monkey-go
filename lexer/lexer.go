@@ -161,9 +161,8 @@ func newToken(tokenType token.TokenType, r rune) token.Token {
 func (l *Lexer) peekRune() byte {
 	if l.readPosition >= len(l.input) {
 		return 0
-	} else {
-		return byte(l.input[l.readPosition])
 	}
+	return byte(l.input[l.readPosition])
 }
 
 func (l *Lexer) readString() string {

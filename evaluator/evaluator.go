@@ -285,11 +285,13 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 
 	if isTruthy(condition) {
 		return Eval(ie.Consequence, env)
-	} else if ie.Alternative != nil {
-		return Eval(ie.Alternative, env)
-	} else {
-		return NULL
 	}
+
+	if ie.Alternative != nil {
+		return Eval(ie.Alternative, env)
+	}
+
+	return NULL
 }
 
 func evalLogicalExpression(operator string, left, right ast.Expression, env *object.Environment) object.Object {
