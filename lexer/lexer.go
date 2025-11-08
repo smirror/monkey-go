@@ -64,6 +64,24 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.LT, l.r)
 	case '>':
 		tok = newToken(token.GT, l.r)
+	case '&':
+		if l.peekRune() == '&' {
+			r := l.r
+			l.readRune()
+			literal := string(r) + string(l.r)
+			tok = token.Token{Type: token.AND, Literal: literal}
+		} else {
+			tok = newToken(token.ILLEGAL, l.r)
+		}
+	case '|':
+		if l.peekRune() == '|' {
+			r := l.r
+			l.readRune()
+			literal := string(r) + string(l.r)
+			tok = token.Token{Type: token.OR, Literal: literal}
+		} else {
+			tok = newToken(token.ILLEGAL, l.r)
+		}
 	case ';':
 		tok = newToken(token.SEMICOLON, l.r)
 	case ':':
