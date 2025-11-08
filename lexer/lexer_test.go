@@ -27,8 +27,6 @@ if (5<10){
 
 10 == 10;
 10 != 9;
-true && false;
-true || false;
 "foobar"
 "foo bar"
 [1, 2];
@@ -121,16 +119,6 @@ true || false;
 		{token.INT, "9"},
 		{token.SEMICOLON, ";"},
 
-		{token.TRUE, "true"},
-		{token.AND, "&&"},
-		{token.FALSE, "false"},
-		{token.SEMICOLON, ";"},
-
-		{token.TRUE, "true"},
-		{token.OR, "||"},
-		{token.FALSE, "false"},
-		{token.SEMICOLON, ";"},
-
 		{token.STRING, "foobar"},
 		{token.STRING, "foo bar"},
 
@@ -163,5 +151,41 @@ true || false;
 			t.Fatalf("tests[%d] - literal wrong. expected=%q, got=%q", i, tt.expectedLiteral, tok.Literal)
 		}
 
+	}
+}
+
+func TestLogicalOperators(t *testing.T) {
+	input := `true && false;
+true || false;`
+
+	tests := []struct {
+		expectedType    token.TokenType
+		expectedLiteral string
+	}{
+		{token.TRUE, "true"},
+		{token.AND, "&&"},
+		{token.FALSE, "false"},
+		{token.SEMICOLON, ";"},
+
+		{token.TRUE, "true"},
+		{token.OR, "||"},
+		{token.FALSE, "false"},
+		{token.SEMICOLON, ";"},
+
+		{token.EOF, ""},
+	}
+
+	l := New(input)
+
+	for i, tt := range tests {
+		tok := l.NextToken()
+
+		if tok.Type != tt.expectedType {
+			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q", i, tt.expectedType, tok.Type)
+		}
+
+		if tok.Literal != tt.expectedLiteral {
+			t.Fatalf("tests[%d] - literal wrong. expected=%q, got=%q", i, tt.expectedLiteral, tok.Literal)
+		}
 	}
 }

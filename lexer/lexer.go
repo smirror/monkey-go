@@ -35,27 +35,13 @@ func (l *Lexer) NextToken() token.Token {
 
 	switch l.r {
 	case '=':
-		if l.peekRune() == '=' {
-			r := l.r
-			l.readRune()
-			literal := string(r) + string(l.r)
-			tok = token.Token{Type: token.EQ, Literal: literal}
-		} else {
-			tok = newToken(token.ASSIGN, l.r)
-		}
+		tok = l.makeTwoCharToken('=', token.EQ, token.ASSIGN)
 	case '+':
 		tok = newToken(token.PLUS, l.r)
 	case '-':
 		tok = newToken(token.MINUS, l.r)
 	case '!':
-		if l.peekRune() == '=' {
-			r := l.r
-			l.readRune()
-			literal := string(r) + string(l.r)
-			tok = token.Token{Type: token.NOT_EQ, Literal: literal}
-		} else {
-			tok = newToken(token.BANG, l.r)
-		}
+		tok = l.makeTwoCharToken('=', token.NOT_EQ, token.BANG)
 	case '/':
 		tok = newToken(token.SLASH, l.r)
 	case '*':
@@ -65,23 +51,9 @@ func (l *Lexer) NextToken() token.Token {
 	case '>':
 		tok = newToken(token.GT, l.r)
 	case '&':
-		if l.peekRune() == '&' {
-			r := l.r
-			l.readRune()
-			literal := string(r) + string(l.r)
-			tok = token.Token{Type: token.AND, Literal: literal}
-		} else {
-			tok = newToken(token.ILLEGAL, l.r)
-		}
+		tok = l.makeTwoCharToken('&', token.AND, token.ILLEGAL)
 	case '|':
-		if l.peekRune() == '|' {
-			r := l.r
-			l.readRune()
-			literal := string(r) + string(l.r)
-			tok = token.Token{Type: token.OR, Literal: literal}
-		} else {
-			tok = newToken(token.ILLEGAL, l.r)
-		}
+		tok = l.makeTwoCharToken('|', token.OR, token.ILLEGAL)
 	case ';':
 		tok = newToken(token.SEMICOLON, l.r)
 	case ':':
@@ -156,6 +128,16 @@ func isDigit(r rune) bool {
 
 func newToken(tokenType token.TokenType, r rune) token.Token {
 	return token.Token{Type: tokenType, Literal: string(r)}
+}
+
+// makeTwoCharToken は2文字演算子を処理するヘルパー関数
+func (l *Lexer) makeTwoCharToken(expected byte, twoCharType, oneCharType token.TokenType) token.Token {
+	if l.peekRune() == expected {
+		r := l.r
+		l.readRune()
+		return token.Token{Type: twoCharType, Literal: string(r) + string(l.r)}
+	}
+	return newToken(oneCharType, l.r)
 }
 
 func (l *Lexer) peekRune() byte {
