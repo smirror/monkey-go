@@ -403,7 +403,7 @@ func TestBuiltinFunctions(t *testing.T) {
 		{`len("Quel vituperabile xenofobo zelante assaggia il whisky ed esclama: alleluja!")`, 75},                         // italian pangram
 		{`len("El pingüino Wenceslao hizo kilómetros bajo exhaustiva lluvia y frío, añoraba a su querido cachorro.")`, 99}, // spanish pangram
 		{`len("သီဟိုဠ်မှ ဉာဏ်ကြီးရှင်သည် အာယုဝဍ္ဎနဆေးညွှန်းစာကို ဇလွန်ဈေးဘေး ဗာဒံပင်ထက် အဓိဋ္ဌာန်လျက် ဂဃနဏဖတ်ခဲ့သည်။")`, 101},                    // burmese pangrams
-		{`len("در صورت حذف این چند واژه غلط به شکیل، ثابت و جامع‌تر ساختن پاراگراف شعر از لحاظ دوری از قافیه‌های اضافه کمک می‌شود")`, 114},       // arabic pangram
+		{`len("در صورت حذف این چند واژه غلط به شکیل، ثابت و جامع‌تر ساختن پاراگراف شعر از لحاظ دوری از قافیه‌های اضافه کمک می‌شود")`, 114},       //nolint:staticcheck // arabic pangram contains ZWNJ
 		{`len("Dès Noël, où un zéphyr haï me vêt de glaçons würmiens, je dîne d’exquis rôtis de bœuf au kir, à l’aÿ d’âge mûr, &cætera.")`, 120}, // french pangram
 		{`len("เป็นมนุษย์สุดประเสริฐเลิศคุณค่า กว่าบรรดาฝูงสัตว์เดรัจฉาน จงฝ่าฟันพัฒนาวิชาการ อย่าล้างผลาญฤๅเข่นฆ่าบีฑาใคร ไม่ถือโทษโกรธแช่งซัดฮึดฮัดด่า หัดอภัยเหมือนกีฬาอัชฌาสัย ปฏิบัติประพฤติกฎกำหนดใจ  ูดจาให้จ๊ะ ๆ จ๋า น่าฟังเอยฯ")`, 216},                                // thai pangrams
 		{`len("ঊনিশে কার্তিক রাত্র সাড়ে আট ঘটিকায় ভৈরবনিবাসী ব্যাংকের ক্ষুদ্র ঋণগ্রস্ত অভাবী দুঃস্থ পৌঢ় কৃষক এজাজ মিঞা হাতের কাছে ঔষধ থাকিতেও ঐ ঋণের ডরেই চোখে ঝাপসা দেখিয়া বুকের যন্ত্রণায় ঈষৎ কাঁপিয়া উঠিয়া উঠানে বিছানো ধূসর রঙের ফরাশের উপর ঢলিয়া পড়িলেন।")`, 247}, // bengali pangrams
@@ -625,5 +625,207 @@ func TestHashMapIndexExpressions(t *testing.T) {
 		} else {
 			testNullObject(t, evaluated)
 		}
+	}
+}
+
+func TestAssignmentExpression(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected int64
+	}{
+		{
+			`let x = 5; x = 10; x;`,
+			10,
+		},
+		{
+			`let x = 5; x = x + 10; x;`,
+			15,
+		},
+		{
+			`let x = 5; let y = x = 10; y;`,
+			10,
+		},
+		{
+			`let x = 5; let y = x = 10; x;`,
+			10,
+		},
+		{
+			`
+			let x = 5;
+			let y = 10;
+			x = y;
+			x;
+			`,
+			10,
+		},
+		{
+			`
+			let x = 5;
+			if (true) {
+				x = 10;
+			}
+			x;
+			`,
+			10,
+		},
+		{
+			`
+			let counter = 0;
+			let i = 0;
+			if (i < 5) {
+				counter = counter + 1;
+				i = i + 1;
+			}
+			counter;
+			`,
+			1,
+		},
+		{
+			`let a = 0; let b = 0; a = b = 5; a;`,
+			5,
+		},
+		{
+			`let a = 0; let b = 0; a = b = 5; b;`,
+			5,
+		},
+		{
+			`
+			let x = 1;
+			let f = fn() { let x = 99; x; };
+			f();
+			x;
+			`,
+			1,
+		},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		testIntegerObject(t, evaluated, tt.expected)
+	}
+}
+
+func TestAssignmentErrors(t *testing.T) {
+	tests := []struct {
+		input           string
+		expectedMessage string
+	}{
+		{
+			"5 = 10;",
+			"left side of assignment must be an identifier",
+		},
+		{
+			"let x = 5; (x + 1) = 10;",
+			"left side of assignment must be an identifier",
+		},
+		{
+			"fn() {} = 5;",
+			"left side of assignment must be an identifier",
+		},
+		{
+			"x = 10;",
+			"identifier not found: x",
+		},
+		{
+			"let x = 1; x = y;",
+			"identifier not found: y",
+		},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+
+		errObj, ok := evaluated.(*object.Error)
+		if !ok {
+			t.Errorf("no error object returned. got=%T(%+v)", evaluated, evaluated)
+			continue
+		}
+
+		if errObj.Message != tt.expectedMessage {
+			t.Errorf("wrong error message. expected=%q, got=%q",
+				tt.expectedMessage, errObj.Message)
+		}
+	}
+}
+
+func TestInfixExpressionNode(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected interface{}
+	}{
+		// 算術演算
+		{"5 + 5", 10},
+		{"5 - 5", 0},
+		{"5 * 5", 25},
+		{"10 / 2", 5},
+		// 比較演算
+		{"5 == 5", true},
+		{"5 != 5", false},
+		{"5 < 10", true},
+		{"5 > 10", false},
+		// 代入演算
+		{"let x = 5; x = 10; x", 10},
+		// 複雑な式での代入
+		{"let x = 5; let y = (x = 3) + 2; y", 5},
+		{"let x = 5; let y = (x = 3) + 2; x", 3},
+		// 文字列の代入
+		{`let x = "hello"; x = "world"; x`, "world"},
+		// booleanの代入
+		{"let x = true; x = false; x", false},
+		// 型が異なる代入（integer -> string）
+		{`let x = 5; x = "hello"; x`, "hello"},
+		// 型が異なる代入（string -> integer）
+		{`let x = "hello"; x = 10; x`, 10},
+		// 型が異なる代入（boolean -> integer）
+		{"let x = true; x = 42; x", 42},
+		// 文字列演算
+		{`"Hello" + " " + "World"`, "Hello World"},
+		// エラー処理 - 左辺の評価エラー
+		{"foobar + 5", "identifier not found: foobar"},
+		// エラー処理 - 右辺の評価エラー
+		{"5 + foobar", "identifier not found: foobar"},
+		// エラー処理 - 型の不一致
+		{"5 + true", "type mismatch: INTEGER + BOOLEAN"},
+		{"5 + \"hello\"", "type mismatch: INTEGER + STRING"},
+	}
+
+	// Note: 未知の演算子（%など）はlexer段階でILLEGALトークンとなるため、
+	// evaluatorの"unknown operator"エラーまで到達しない。
+	// この種のエラーはparserレベルで検出される。
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		checkInfixTestResult(t, evaluated, tt.expected)
+	}
+}
+
+func checkInfixTestResult(t *testing.T, evaluated object.Object, expected interface{}) {
+	switch expected := expected.(type) {
+	case int:
+		testIntegerObject(t, evaluated, int64(expected))
+	case bool:
+		testBooleanObject(t, evaluated, expected)
+	case string:
+		checkStringOrError(t, evaluated, expected)
+	}
+}
+
+func checkStringOrError(t *testing.T, evaluated object.Object, expected string) {
+	errObj, ok := evaluated.(*object.Error)
+	if !ok {
+		// エラーではなく文字列値の場合
+		strObj, ok := evaluated.(*object.String)
+		if !ok {
+			t.Errorf("object is not String or Error. got=%T (%+v)", evaluated, evaluated)
+			return
+		}
+		if strObj.Value != expected {
+			t.Errorf("string has wrong value. expected=%q, got=%q", expected, strObj.Value)
+		}
+		return
+	}
+	// エラーメッセージのチェック
+	if errObj.Message != expected {
+		t.Errorf("wrong error message. expected=%q, got=%q", expected, errObj.Message)
 	}
 }

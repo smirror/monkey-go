@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"monkey-go/ast"
 	"monkey-go/object"
+	"monkey-go/token"
 )
 
 var (
@@ -49,17 +50,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalPrefixExpression(node.Operator, right)
 
 	case *ast.InfixExpression:
-		left := Eval(node.Left, env)
-		if isError(left) {
-			return left
-		}
-
-		right := Eval(node.Right, env)
-		if isError(right) {
-			return right
-		}
-
-		return evalInfixExpression(node.Operator, left, right)
+		return evalInfixExpressionNode(node, env)
 
 	case *ast.IfExpression:
 		return evalIfExpression(node, env)
@@ -280,11 +271,47 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 
 	if isTruthy(condition) {
 		return Eval(ie.Consequence, env)
-	} else if ie.Alternative != nil {
-		return Eval(ie.Alternative, env)
-	} else {
-		return NULL
 	}
+	if ie.Alternative != nil {
+		return Eval(ie.Alternative, env)
+	}
+	return NULL
+}
+
+func evalInfixExpressionNode(node *ast.InfixExpression, env *object.Environment) object.Object {
+	// 代入式を個別に処理
+	if node.Operator == token.ASSIGN {
+		return evalAssignmentExpression(node, env)
+	}
+
+	left := Eval(node.Left, env)
+	if isError(left) {
+		return left
+	}
+
+	right := Eval(node.Right, env)
+	if isError(right) {
+		return right
+	}
+
+	return evalInfixExpression(node.Operator, left, right)
+}
+
+func evalAssignmentExpression(node *ast.InfixExpression, env *object.Environment) object.Object {
+	ident, ok := node.Left.(*ast.Identifier)
+	if !ok {
+		return newError("left side of assignment must be an identifier")
+	}
+
+	val := Eval(node.Right, env)
+	if isError(val) {
+		return val
+	}
+
+	if _, ok := env.Reassign(ident.Value, val); !ok {
+		return newError("identifier not found: " + ident.Value)
+	}
+	return val
 }
 
 func isTruthy(obj object.Object) bool {
