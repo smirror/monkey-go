@@ -49,6 +49,11 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalPrefixExpression(node.Operator, right)
 
 	case *ast.InfixExpression:
+		// 論理演算子は短絡評価を行う
+		if node.Operator == "&&" || node.Operator == "||" {
+			return evalLogicalExpression(node.Operator, node.Left, node.Right, env)
+		}
+
 		left := Eval(node.Left, env)
 		if isError(left) {
 			return left
@@ -280,10 +285,49 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 
 	if isTruthy(condition) {
 		return Eval(ie.Consequence, env)
-	} else if ie.Alternative != nil {
+	}
+
+	if ie.Alternative != nil {
 		return Eval(ie.Alternative, env)
-	} else {
-		return NULL
+	}
+
+	return NULL
+}
+
+func evalLogicalExpression(operator string, left, right ast.Expression, env *object.Environment) object.Object {
+	// 左辺を評価
+	leftVal := Eval(left, env)
+	if isError(leftVal) {
+		return leftVal
+	}
+
+	switch operator {
+	case "&&":
+		// 左辺がfalseなら右辺を評価せずにfalseを返す（短絡評価）
+		if !isTruthy(leftVal) {
+			return FALSE
+		}
+		// 左辺がtrueなら右辺を評価して返す
+		rightVal := Eval(right, env)
+		if isError(rightVal) {
+			return rightVal
+		}
+		return nativeBoolToBooleanObject(isTruthy(rightVal))
+
+	case "||":
+		// 左辺がtrueなら右辺を評価せずにtrueを返す（短絡評価）
+		if isTruthy(leftVal) {
+			return TRUE
+		}
+		// 左辺がfalseなら右辺を評価して返す
+		rightVal := Eval(right, env)
+		if isError(rightVal) {
+			return rightVal
+		}
+		return nativeBoolToBooleanObject(isTruthy(rightVal))
+
+	default:
+		return newError("unknown operator: %s", operator)
 	}
 }
 

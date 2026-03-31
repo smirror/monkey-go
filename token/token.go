@@ -30,6 +30,9 @@ const (
 	EQ     = "=="
 	NOT_EQ = "!="
 
+	AND = "&&"
+	OR  = "||"
+
 	// デリミタ
 	COMMA     = ","
 	SEMICOLON = ";"

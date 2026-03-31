@@ -35,27 +35,13 @@ func (l *Lexer) NextToken() token.Token {
 
 	switch l.r {
 	case '=':
-		if l.peekRune() == '=' {
-			r := l.r
-			l.readRune()
-			literal := string(r) + string(l.r)
-			tok = token.Token{Type: token.EQ, Literal: literal}
-		} else {
-			tok = newToken(token.ASSIGN, l.r)
-		}
+		tok = l.makeTwoCharToken('=', token.EQ, token.ASSIGN)
 	case '+':
 		tok = newToken(token.PLUS, l.r)
 	case '-':
 		tok = newToken(token.MINUS, l.r)
 	case '!':
-		if l.peekRune() == '=' {
-			r := l.r
-			l.readRune()
-			literal := string(r) + string(l.r)
-			tok = token.Token{Type: token.NOT_EQ, Literal: literal}
-		} else {
-			tok = newToken(token.BANG, l.r)
-		}
+		tok = l.makeTwoCharToken('=', token.NOT_EQ, token.BANG)
 	case '/':
 		tok = newToken(token.SLASH, l.r)
 	case '*':
@@ -64,6 +50,10 @@ func (l *Lexer) NextToken() token.Token {
 		tok = newToken(token.LT, l.r)
 	case '>':
 		tok = newToken(token.GT, l.r)
+	case '&':
+		tok = l.makeTwoCharToken('&', token.AND, token.ILLEGAL)
+	case '|':
+		tok = l.makeTwoCharToken('|', token.OR, token.ILLEGAL)
 	case ';':
 		tok = newToken(token.SEMICOLON, l.r)
 	case ':':
@@ -140,12 +130,21 @@ func newToken(tokenType token.TokenType, r rune) token.Token {
 	return token.Token{Type: tokenType, Literal: string(r)}
 }
 
+// makeTwoCharToken は2文字演算子を処理するヘルパー関数
+func (l *Lexer) makeTwoCharToken(expected byte, twoCharType, oneCharType token.TokenType) token.Token {
+	if l.peekRune() == expected {
+		r := l.r
+		l.readRune()
+		return token.Token{Type: twoCharType, Literal: string(r) + string(l.r)}
+	}
+	return newToken(oneCharType, l.r)
+}
+
 func (l *Lexer) peekRune() byte {
 	if l.readPosition >= len(l.input) {
 		return 0
-	} else {
-		return byte(l.input[l.readPosition])
 	}
+	return byte(l.input[l.readPosition])
 }
 
 func (l *Lexer) readString() string {
