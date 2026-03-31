@@ -91,7 +91,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.GT, p.parseInfixExpression)
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
-	p.registerInfix(token.ASSIGN, p.parseInfixExpression)
+	p.registerInfix(token.ASSIGN, p.parseAssignExpression)
 
 	//2つトークンに読み込む。curTokenとpeekTokenの両方がセットされる。
 	p.nextToken()
@@ -263,13 +263,20 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 }
 
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
+	return p.parseInfixExpressionWithPrecedence(left, p.curPrecedence())
+}
+
+func (p *Parser) parseAssignExpression(left ast.Expression) ast.Expression {
+	return p.parseInfixExpressionWithPrecedence(left, p.curPrecedence()-1)
+}
+
+func (p *Parser) parseInfixExpressionWithPrecedence(left ast.Expression, precedence int) ast.Expression {
 	expression := &ast.InfixExpression{
 		Token:    p.curToken,
 		Operator: p.curToken.Literal,
 		Left:     left,
 	}
 
-	precedence := p.curPrecedence()
 	p.nextToken()
 	expression.Right = p.parseExpression(precedence)
 

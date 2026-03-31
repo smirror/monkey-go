@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"monkey-go/ast"
 	"monkey-go/object"
+	"monkey-go/token"
 )
 
 var (
@@ -279,7 +280,7 @@ func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Obje
 
 func evalInfixExpressionNode(node *ast.InfixExpression, env *object.Environment) object.Object {
 	// 代入式を個別に処理
-	if node.Operator == "=" {
+	if node.Operator == token.ASSIGN {
 		return evalAssignmentExpression(node, env)
 	}
 
@@ -297,20 +298,19 @@ func evalInfixExpressionNode(node *ast.InfixExpression, env *object.Environment)
 }
 
 func evalAssignmentExpression(node *ast.InfixExpression, env *object.Environment) object.Object {
-	// 左辺は識別子である必要がある
 	ident, ok := node.Left.(*ast.Identifier)
 	if !ok {
 		return newError("left side of assignment must be an identifier")
 	}
 
-	// 右辺を評価
 	val := Eval(node.Right, env)
 	if isError(val) {
 		return val
 	}
 
-	// 環境に値を設定
-	env.Set(ident.Value, val)
+	if _, ok := env.Reassign(ident.Value, val); !ok {
+		return newError("identifier not found: " + ident.Value)
+	}
 	return val
 }
 

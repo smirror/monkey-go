@@ -20,6 +20,33 @@ monkey-go is based on "
 - [ ] for-loops
 - [ ] logical operators
 
+## Roadmap
+
+### High Priority
+- [ ] Comments (`//`, `/* */`)
+- [ ] Float type
+- [ ] Logical operators (`&&`, `||`)
+- [ ] Comparison operators (`<=`, `>=`)
+- [ ] Modulo operator (`%`)
+- [ ] for / while loops + break / continue
+- [ ] Variable reassignment (`x = 10`)
+- [ ] `type()` function
+
+### Medium Priority
+- [ ] Escape sequences (`\n`, `\t`, `\\`)
+- [ ] Compound assignment operators (`+=`, `-=`, `*=`, `/=`)
+- [ ] String functions (split, replace, trim, upper/lower)
+- [ ] Array/Hash functions (map, filter, sort, reverse, keys, values)
+- [ ] Type conversion functions (`int()`, `string()`, `float()`)
+- [ ] String indexing (`str[0]`)
+
+### Low Priority
+- [ ] switch / case
+- [ ] File I/O
+- [ ] Error handling (try/catch)
+- [ ] import / module system
+- [ ] Standard input (`input()`)
+
 # Reference
 
 ## main text
