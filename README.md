@@ -13,7 +13,159 @@ monkey-go is based on "
 ## Environment
  - go version >= 1.18
 
+## Usage
+
+### Start REPL
+
+```sh
+go run main.go
+```
+
+```
+Hello <user>! This is the Monkey programming language!
+Feel free to type in commands
+>>
+```
+
+Type `exit` to quit.
+
+### Run tests
+
+```sh
+go test ./...
+```
+
 ## Syntax
+
+### Variables
+
+```monkey
+let x = 5;
+let name = "Monkey";
+let flag = true;
+```
+
+### Integers
+
+```monkey
+let a = 10;
+let b = 3;
+a + b  // 13
+a - b  // 7
+a * b  // 30
+a / b  // 3
+a < b  // false
+a > b  // true
+a == b // false
+a != b // true
+```
+
+### Booleans
+
+```monkey
+true
+false
+!true  // false
+true == false  // false
+true != false  // true
+```
+
+### Strings
+
+Strings support Unicode (including multibyte characters).
+
+```monkey
+let s = "Hello, World!";
+let greeting = "こんにちは";
+s + " Goodbye!"  // concatenation
+```
+
+### If / Else
+
+```monkey
+if (x > 5) {
+    x
+} else {
+    0
+}
+```
+
+`if` is an expression and returns a value.
+
+### Functions
+
+```monkey
+let add = fn(x, y) {
+    x + y
+};
+
+add(3, 4)  // 7
+```
+
+Functions are first-class values. The last evaluated expression is the return value.
+
+```monkey
+let factorial = fn(n) {
+    if (n == 0) {
+        1
+    } else {
+        n * factorial(n - 1)
+    }
+};
+```
+
+### Return
+
+```monkey
+let earlyReturn = fn(x) {
+    if (x > 10) {
+        return x;
+    }
+    x * 2
+};
+```
+
+### Arrays
+
+```monkey
+let a = [1, 2, 3, "four", true];
+a[0]   // 1
+a[3]   // "four"
+```
+
+### Hashes
+
+```monkey
+let h = {"key": "value", 1: "one", true: "yes"};
+h["key"]  // "value"
+h[1]      // "one"
+h[true]   // "yes"
+```
+
+### Built-in Functions
+
+| Function | Description |
+|----------|-------------|
+| `len(s)` | Length of string (Unicode-aware) or array |
+| `first(arr)` | First element of array |
+| `last(arr)` | Last element of array |
+| `rest(arr)` | New array without the first element |
+| `push(arr, val)` | New array with val appended |
+| `print(...)` | Print values to stdout |
+
+```monkey
+let arr = [1, 2, 3];
+len(arr)        // 3
+first(arr)      // 1
+last(arr)       // 3
+rest(arr)       // [2, 3]
+push(arr, 4)    // [1, 2, 3, 4]
+
+len("hello")    // 5
+len("こんにちは")  // 5
+
+print("Hello!", 42, true)
+```
 
 ## Feature
 - [x] Unicode support
