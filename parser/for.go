@@ -39,50 +39,16 @@ func (p *Parser) parseForInStatement(forToken token.Token) ast.Statement {
 }
 
 func (p *Parser) parseClassicForStatement(forToken token.Token) ast.Statement {
-	var init ast.Statement
-
-	// Initialization is a let-statement, an expression, or empty.
-	if !p.curTokenIs(token.SEMICOLON) {
-		if p.curTokenIs(token.LET) {
-			letStmt := p.parseLetStatement()
-			if letStmt == nil {
-				return nil
-			}
-			init = letStmt
-			// parseLetStatement consumes the first semicolon itself.
-			if !p.curTokenIs(token.SEMICOLON) {
-				p.errors = append(p.errors, "expected ';' after for initializer")
-				return nil
-			}
-		} else {
-			firstToken := p.curToken
-			expr := p.parseExpression(LOWEST)
-			if expr == nil || !p.expectPeek(token.SEMICOLON) {
-				return nil
-			}
-			init = &ast.ExpressionStatement{Token: firstToken, Expression: expr}
-		}
-	}
-
-	p.nextToken() // Start of the condition, after the first ';'.
-	if p.curTokenIs(token.SEMICOLON) {
-		p.errors = append(p.errors, "for condition must not be empty")
+	init, ok := p.parseForInitializer()
+	if !ok {
 		return nil
 	}
-	condition := p.parseExpression(LOWEST)
-	if condition == nil || !p.expectPeek(token.SEMICOLON) {
+	condition, ok := p.parseForCondition()
+	if !ok {
 		return nil
 	}
-
-	p.nextToken() // Start of the optional post expression.
-	var post ast.Expression
-	if !p.curTokenIs(token.RPAREN) {
-		post = p.parseExpression(LOWEST)
-		if post == nil || !p.expectPeek(token.RPAREN) {
-			return nil
-		}
-	}
-	if !p.expectPeek(token.LBRACE) {
+	post, ok := p.parseForPost()
+	if !ok || !p.expectPeek(token.LBRACE) {
 		return nil
 	}
 	return &ast.ForStatement{
@@ -92,6 +58,59 @@ func (p *Parser) parseClassicForStatement(forToken token.Token) ast.Statement {
 		Post:      post,
 		Body:      p.parseBlockStatement(),
 	}
+}
+
+func (p *Parser) parseForInitializer() (ast.Statement, bool) {
+	if p.curTokenIs(token.SEMICOLON) {
+		return nil, true
+	}
+	if p.curTokenIs(token.LET) {
+		return p.parseForLetInitializer()
+	}
+
+	firstToken := p.curToken
+	expr := p.parseExpression(LOWEST)
+	if expr == nil || !p.expectPeek(token.SEMICOLON) {
+		return nil, false
+	}
+	return &ast.ExpressionStatement{Token: firstToken, Expression: expr}, true
+}
+
+func (p *Parser) parseForLetInitializer() (ast.Statement, bool) {
+	letStmt := p.parseLetStatement()
+	if letStmt == nil {
+		return nil, false
+	}
+	if !p.curTokenIs(token.SEMICOLON) {
+		p.errors = append(p.errors, "expected ';' after for initializer")
+		return nil, false
+	}
+	return letStmt, true
+}
+
+func (p *Parser) parseForCondition() (ast.Expression, bool) {
+	p.nextToken() // After initializer ';'.
+	if p.curTokenIs(token.SEMICOLON) {
+		p.errors = append(p.errors, "for condition must not be empty")
+		return nil, false
+	}
+	condition := p.parseExpression(LOWEST)
+	if condition == nil || !p.expectPeek(token.SEMICOLON) {
+		return nil, false
+	}
+	return condition, true
+}
+
+func (p *Parser) parseForPost() (ast.Expression, bool) {
+	p.nextToken() // After condition ';'.
+	if p.curTokenIs(token.RPAREN) {
+		return nil, true
+	}
+	post := p.parseExpression(LOWEST)
+	if post == nil || !p.expectPeek(token.RPAREN) {
+		return nil, false
+	}
+	return post, true
 }
 
 func (p *Parser) parsePostfixExpression(left ast.Expression) ast.Expression {
