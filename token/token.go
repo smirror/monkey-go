@@ -22,7 +22,7 @@ const (
 	MINUS    = "-"
 	BANG     = "!"
 	ASTERISK = "*"
-	SLASH    = ""
+	SLASH    = "/"
 
 	LT = "<"
 	GT = ">"

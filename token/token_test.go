@@ -22,6 +22,8 @@ func TestTokenTypeUniqueness(t *testing.T) {
 		{"GT", GT},
 		{"EQ", EQ},
 		{"NOT_EQ", NOT_EQ},
+		{"AND", AND},
+		{"OR", OR},
 		{"COMMA", COMMA},
 		{"SEMICOLON", SEMICOLON},
 		{"COLON", COLON},
