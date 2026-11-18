@@ -14,6 +14,7 @@ func TestTokenTypeUniqueness(t *testing.T) {
 		{"STRING", STRING},
 		{"ASSIGN", ASSIGN},
 		{"PLUS", PLUS},
+		{"INCREMENT", INCREMENT},
 		{"MINUS", MINUS},
 		{"BANG", BANG},
 		{"ASTERISK", ASTERISK},
@@ -40,6 +41,8 @@ func TestTokenTypeUniqueness(t *testing.T) {
 		{"IF", IF},
 		{"ELSE", ELSE},
 		{"RETURN", RETURN},
+		{"FOR", FOR},
+		{"IN", IN},
 	}
 
 	seen := make(map[TokenType]string)

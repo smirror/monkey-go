@@ -37,7 +37,7 @@ func (l *Lexer) NextToken() token.Token {
 	case '=':
 		tok = l.makeTwoCharToken('=', token.EQ, token.ASSIGN)
 	case '+':
-		tok = newToken(token.PLUS, l.r)
+		tok = l.makeTwoCharToken('+', token.INCREMENT, token.PLUS)
 	case '-':
 		tok = newToken(token.MINUS, l.r)
 	case '!':

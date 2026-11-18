@@ -213,3 +213,31 @@ func TestInvalidLogicalOperators(t *testing.T) {
 		})
 	}
 }
+
+func TestForLoopTokens(t *testing.T) {
+	input := `for (i in range(2, 10)) { i++; }
+for (i = 0; i < 10; i++) {}`
+	tests := []struct {
+		kind token.TokenType
+		text string
+	}{
+		{token.FOR, "for"}, {token.LPAREN, "("}, {token.IDENT, "i"},
+		{token.IN, "in"}, {token.IDENT, "range"}, {token.LPAREN, "("},
+		{token.INT, "2"}, {token.COMMA, ","}, {token.INT, "10"},
+		{token.RPAREN, ")"}, {token.RPAREN, ")"}, {token.LBRACE, "{"},
+		{token.IDENT, "i"}, {token.INCREMENT, "++"}, {token.SEMICOLON, ";"},
+		{token.RBRACE, "}"}, {token.FOR, "for"}, {token.LPAREN, "("},
+		{token.IDENT, "i"}, {token.ASSIGN, "="}, {token.INT, "0"},
+		{token.SEMICOLON, ";"}, {token.IDENT, "i"}, {token.LT, "<"},
+		{token.INT, "10"}, {token.SEMICOLON, ";"}, {token.IDENT, "i"},
+		{token.INCREMENT, "++"}, {token.RPAREN, ")"}, {token.LBRACE, "{"},
+		{token.RBRACE, "}"}, {token.EOF, ""},
+	}
+	l := New(input)
+	for i, want := range tests {
+		got := l.NextToken()
+		if got.Type != want.kind || got.Literal != want.text {
+			t.Fatalf("token[%d]: got=%+v, want=%+v", i, got, want)
+		}
+	}
+}
