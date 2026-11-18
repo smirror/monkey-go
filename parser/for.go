@@ -44,10 +44,11 @@ func (p *Parser) parseClassicForStatement(forToken token.Token) ast.Statement {
 	// Initialization is a let-statement, an expression, or empty.
 	if !p.curTokenIs(token.SEMICOLON) {
 		if p.curTokenIs(token.LET) {
-			init = p.parseLetStatement()
-			if init == nil {
+			letStmt := p.parseLetStatement()
+			if letStmt == nil {
 				return nil
 			}
+			init = letStmt
 			// parseLetStatement consumes the first semicolon itself.
 			if !p.curTokenIs(token.SEMICOLON) {
 				p.errors = append(p.errors, "expected ';' after for initializer")

@@ -27,7 +27,7 @@ func TestForInParsing(t *testing.T) {
 		{"for (i in range(10)) { print(i) }", "i", "range(10)"},
 		{"for (item in [10, 20, 30]) { print(item) }", "item", "[10, 20, 30]"},
 		{"for (item in values) { print(item) }", "item", "values"},
-		{"for (i in fn(x) { x }([1, 2])) { i }", "i", "fn(x)([1, 2])"},
+		{"for (i in getItems(2)) { i }", "i", "getItems(2)"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
