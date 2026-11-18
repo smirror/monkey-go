@@ -131,7 +131,7 @@ func newToken(tokenType token.TokenType, r rune) token.Token {
 }
 
 // makeTwoCharToken は2文字演算子を処理するヘルパー関数
-func (l *Lexer) makeTwoCharToken(expected byte, twoCharType, oneCharType token.TokenType) token.Token {
+func (l *Lexer) makeTwoCharToken(expected rune, twoCharType, oneCharType token.TokenType) token.Token {
 	if l.peekRune() == expected {
 		r := l.r
 		l.readRune()
@@ -140,11 +140,11 @@ func (l *Lexer) makeTwoCharToken(expected byte, twoCharType, oneCharType token.T
 	return newToken(oneCharType, l.r)
 }
 
-func (l *Lexer) peekRune() byte {
+func (l *Lexer) peekRune() rune {
 	if l.readPosition >= len(l.input) {
 		return 0
 	}
-	return byte(l.input[l.readPosition])
+	return l.input[l.readPosition]
 }
 
 func (l *Lexer) readString() string {

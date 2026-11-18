@@ -189,3 +189,27 @@ true || false;`
 		}
 	}
 }
+
+func TestInvalidLogicalOperators(t *testing.T) {
+	tests := []struct {
+		input string
+		want  []token.Token
+	}{
+		{"&", []token.Token{{Type: token.ILLEGAL, Literal: "&"}, {Type: token.EOF, Literal: ""}}},
+		{"|", []token.Token{{Type: token.ILLEGAL, Literal: "|"}, {Type: token.EOF, Literal: ""}}},
+		{"&Ħ", []token.Token{{Type: token.ILLEGAL, Literal: "&"}, {Type: token.ILLEGAL, Literal: "Ħ"}, {Type: token.EOF, Literal: ""}}},
+		{"|ż", []token.Token{{Type: token.ILLEGAL, Literal: "|"}, {Type: token.ILLEGAL, Literal: "ż"}, {Type: token.EOF, Literal: ""}}},
+		{"&Ħ&&", []token.Token{{Type: token.ILLEGAL, Literal: "&"}, {Type: token.ILLEGAL, Literal: "Ħ"}, {Type: token.AND, Literal: "&&"}, {Type: token.EOF, Literal: ""}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			l := New(tt.input)
+			for i, want := range tt.want {
+				got := l.NextToken()
+				if got.Type != want.Type || got.Literal != want.Literal {
+					t.Fatalf("token[%d] got=%+v, want=%+v", i, got, want)
+				}
+			}
+		})
+	}
+}
