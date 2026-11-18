@@ -49,13 +49,15 @@ func TestForInParsing(t *testing.T) {
 	}
 }
 
+type classicForCase struct {
+	input   string
+	initAST string
+	condAST string
+	postAST string
+}
+
 func TestClassicForParsing(t *testing.T) {
-	tests := []struct {
-		input   string
-		initAST string
-		condAST string
-		postAST string
-	}{
+	tests := []classicForCase{
 		{"for (i = 0; i < 10; i++) { print(i) }", "(i = 0)", "(i < 10)", "(i++)"},
 		{"for (let i = 0; i < 10; i = i + 1) { print(i); }", "let i = 0", "(i < 10)", "(i = (i + 1))"},
 		{"for (; i < 10; i++) { i }", "", "(i < 10)", "(i++)"},
@@ -64,14 +66,14 @@ func TestClassicForParsing(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
-			assertClassicFor(t, tt.input, tt.initAST, tt.condAST, tt.postAST)
+			assertClassicFor(t, tt)
 		})
 	}
 }
 
-func assertClassicFor(t *testing.T, input, wantInit, wantCondition, wantPost string) {
+func assertClassicFor(t *testing.T, tt classicForCase) {
 	t.Helper()
-	program := parseForTest(t, input)
+	program := parseForTest(t, tt.input)
 	if len(program.Statements) != 1 {
 		t.Fatalf("got %d statements, want 1", len(program.Statements))
 	}
@@ -79,25 +81,30 @@ func assertClassicFor(t *testing.T, input, wantInit, wantCondition, wantPost str
 	if !ok {
 		t.Fatalf("got %T, want *ast.ForStatement", program.Statements[0])
 	}
+	assertClassicForClauses(t, stmt, tt)
+	if len(stmt.Body.Statements) != 1 {
+		t.Fatalf("body statements=%d, want 1", len(stmt.Body.Statements))
+	}
+}
+
+func assertClassicForClauses(t *testing.T, stmt *ast.ForStatement, tt classicForCase) {
+	t.Helper()
 	init := ""
 	if stmt.Init != nil {
 		init = strings.TrimSuffix(stmt.Init.String(), ";")
+	}
+	if init != tt.initAST {
+		t.Errorf("initializer got %q, want %q", init, tt.initAST)
+	}
+	if condition := stmt.Condition.String(); condition != tt.condAST {
+		t.Errorf("condition got %q, want %q", condition, tt.condAST)
 	}
 	post := ""
 	if stmt.Post != nil {
 		post = stmt.Post.String()
 	}
-	if init != wantInit {
-		t.Errorf("initializer got %q, want %q", init, wantInit)
-	}
-	if condition := stmt.Condition.String(); condition != wantCondition {
-		t.Errorf("condition got %q, want %q", condition, wantCondition)
-	}
-	if post != wantPost {
-		t.Errorf("post got %q, want %q", post, wantPost)
-	}
-	if len(stmt.Body.Statements) != 1 {
-		t.Fatalf("body statements=%d, want 1", len(stmt.Body.Statements))
+	if post != tt.postAST {
+		t.Errorf("post got %q, want %q", post, tt.postAST)
 	}
 }
 
