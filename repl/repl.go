@@ -2,7 +2,6 @@ package repl
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"monkey-go/evaluator"
 	"monkey-go/lexer"
@@ -19,48 +18,63 @@ func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment()
 	var input strings.Builder
-
 	for {
-		prompt := PROMPT
-		if input.Len() > 0 {
-			prompt = CONTINUATION_PROMPT
-		}
-		fmt.Fprintf(out, prompt) // nolint
-
-		if !scanner.Scan() {
-			if input.Len() > 0 {
-				_, _ = io.WriteString(out, "incomplete input\n")
-			}
+		source, done := nextREPLSource(scanner, out, &input)
+		if done {
 			return
 		}
-
-		line := scanner.Text()
-		if input.Len() == 0 && strings.EqualFold(strings.TrimSpace(line), "exit") {
-			break
-		}
-		input.WriteString(line)
-		input.WriteByte('\n')
-
-		if needsMoreInput(input.String()) {
+		if source == "" {
 			continue
 		}
-		source := input.String()
-		input.Reset()
-
-		p := parser.New(lexer.New(source))
-		program := p.ParseProgram()
-		if len(p.Errors()) != 0 {
-			printParserErrors(out, p.Errors())
-			continue
-		}
-
-		evaluated := evaluator.Eval(program, env)
-		if evaluated != nil {
-			if _, err := io.WriteString(out, evaluated.Inspect()+"\n"); err != nil {
-				return
-			}
+		if !evaluateREPLSource(source, env, out) {
+			return
 		}
 	}
+}
+
+func nextREPLSource(scanner *bufio.Scanner, out io.Writer, input *strings.Builder) (string, bool) {
+	prompt := PROMPT
+	if input.Len() > 0 {
+		prompt = CONTINUATION_PROMPT
+	}
+	if _, err := io.WriteString(out, prompt); err != nil {
+		return "", true
+	}
+
+	if !scanner.Scan() {
+		if input.Len() > 0 {
+			_, _ = io.WriteString(out, "incomplete input\n")
+		}
+		return "", true
+	}
+	line := scanner.Text()
+	if input.Len() == 0 && strings.EqualFold(strings.TrimSpace(line), "exit") {
+		return "", true
+	}
+	input.WriteString(line)
+	input.WriteByte('\n')
+	if needsMoreInput(input.String()) {
+		return "", false
+	}
+
+	source := input.String()
+	input.Reset()
+	return source, false
+}
+
+func evaluateREPLSource(source string, env *object.Environment, out io.Writer) bool {
+	p := parser.New(lexer.New(source))
+	program := p.ParseProgram()
+	if len(p.Errors()) != 0 {
+		printParserErrors(out, p.Errors())
+		return true
+	}
+	value := evaluator.Eval(program, env)
+	if value == nil {
+		return true
+	}
+	_, err := io.WriteString(out, value.Inspect()+"\n")
+	return err == nil
 }
 
 // Keep reading when an unclosed delimiter requires another input line.
