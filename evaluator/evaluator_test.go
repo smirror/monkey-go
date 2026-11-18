@@ -989,8 +989,9 @@ func TestRangeBuiltin(t *testing.T) {
 			if !ok {
 				t.Fatalf("expected Range, got %T (%+v)", got, got)
 			}
-			if rng.Start != tt.start || rng.Stop != tt.stop || rng.Step != tt.step {
-				t.Fatalf("unexpected range: %+v", rng)
+			want := object.Range{Start: tt.start, Stop: tt.stop, Step: tt.step}
+			if *rng != want {
+				t.Fatalf("range got %+v, want %+v", rng, want)
 			}
 		})
 	}

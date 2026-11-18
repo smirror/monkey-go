@@ -80,8 +80,14 @@ func TestClassicForParsing(t *testing.T) {
 			if stmt.Post != nil {
 				post = stmt.Post.String()
 			}
-			if init != tt.initAST || stmt.Condition.String() != tt.condAST || post != tt.postAST {
-				t.Fatalf("init=%q cond=%q post=%q", init, stmt.Condition.String(), post)
+			if init != tt.initAST {
+				t.Errorf("initializer got %q, want %q", init, tt.initAST)
+			}
+			if condition := stmt.Condition.String(); condition != tt.condAST {
+				t.Errorf("condition got %q, want %q", condition, tt.condAST)
+			}
+			if post != tt.postAST {
+				t.Errorf("post got %q, want %q", post, tt.postAST)
 			}
 			if len(stmt.Body.Statements) != 1 {
 				t.Fatalf("body statements=%d, want 1", len(stmt.Body.Statements))

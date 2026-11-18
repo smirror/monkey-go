@@ -26,7 +26,13 @@ func (p *Parser) parseForInStatement(forToken token.Token) ast.Statement {
 	p.nextToken() // Start of the iterable expression.
 
 	iterable := p.parseExpression(LOWEST)
-	if iterable == nil || !p.expectPeek(token.RPAREN) || !p.expectPeek(token.LBRACE) {
+	if iterable == nil {
+		return nil
+	}
+	if !p.expectPeek(token.RPAREN) {
+		return nil
+	}
+	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
 
