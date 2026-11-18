@@ -898,3 +898,72 @@ func TestLogicalOperatorShortCircuit(t *testing.T) {
 	}
 }
 
+func TestLogicalOperatorErrorPropagation(t *testing.T) {
+	tests := []struct {
+		input       string
+		wantBool    bool
+		wantError   string
+	}{
+		{"false && missing_var", false, ""},
+		{"true || missing_var", true, ""},
+		{"true && missing_var", false, "identifier not found: missing_var"},
+		{"false || missing_var", false, "identifier not found: missing_var"},
+		{"missing_var && false", false, "identifier not found: missing_var"},
+		{"missing_var || true", false, "identifier not found: missing_var"},
+		{"true && (1 + true)", false, "type mismatch: INTEGER + BOOLEAN"},
+		{"false || (1 + true)", false, "type mismatch: INTEGER + BOOLEAN"},
+		{"false && (1 + true)", false, ""},
+		{"true || (1 + true)", true, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := testEval(tt.input)
+			if tt.wantError != "" {
+				err, ok := got.(*object.Error)
+				if !ok {
+					t.Fatalf("expected error %q; got %T (%+v)", tt.wantError, got, got)
+				}
+				if err.Message != tt.wantError {
+					t.Fatalf("expected error %q; got %q", tt.wantError, err.Message)
+				}
+				return
+			}
+			testBooleanObject(t, got, tt.wantBool)
+		})
+	}
+}
+
+func TestLogicalOperatorShortCircuitAssignments(t *testing.T) {
+	tests := []struct {
+		input string
+		want  int64
+	}{
+		{"let x = 0; false && (x = 1); x;", 0},
+		{"let x = 0; true || (x = 1); x;", 0},
+		{"let x = 0; true && (x = 1); x;", 1},
+		{"let x = 0; false || (x = 1); x;", 1},
+		{"let x = 0; false || true && (x = 2); x;", 2},
+		{"let x = 0; true || false && (x = 2); x;", 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			testIntegerObject(t, testEval(tt.input), tt.want)
+		})
+	}
+}
+
+func TestLogicalOperatorAssignmentPrecedence(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"let x = false; x = false || true; x;", true},
+		{"let x = true; x = true && false; x;", false},
+		{"let x = false; let y = false; x = y = true; x && y;", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			testBooleanObject(t, testEval(tt.input), tt.want)
+		})
+	}
+}
