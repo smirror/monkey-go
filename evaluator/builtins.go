@@ -6,6 +6,33 @@ import (
 )
 
 var builtins = map[string]*object.Builtin{
+	"range": {
+		Fn: func(args ...object.Object) object.Object {
+			if len(args) < 1 || len(args) > 3 {
+				return newError("wrong number of arguments to `range`. got=%d, want=1..3", len(args))
+			}
+			values := make([]int64, len(args))
+			for i, arg := range args {
+				n, ok := arg.(*object.Integer)
+				if !ok {
+					return newError("argument %d to `range` must be INTEGER, got %s", i+1, arg.Type())
+				}
+				values[i] = n.Value
+			}
+
+			start, stop, step := int64(0), values[0], int64(1)
+			if len(values) >= 2 {
+				start, stop = values[0], values[1]
+			}
+			if len(values) == 3 {
+				step = values[2]
+			}
+			if step == 0 {
+				return newError("range step cannot be zero")
+			}
+			return &object.Range{Start: start, Stop: stop, Step: step}
+		},
+	},
 	"len": {
 		Fn: func(args ...object.Object) object.Object {
 			if len(args) != 1 {
