@@ -39,30 +39,35 @@ type rangeIterator struct {
 }
 
 func (it *rangeIterator) Next() (Object, bool) {
-	if it.done || it.step == 0 {
+	if !it.inBounds() {
 		return nil, false
 	}
-	v := it.current
-	if it.step > 0 {
-		if v >= it.stop {
-			return nil, false
-		}
-		if v > math.MaxInt64-it.step {
-			it.done = true
-		} else {
-			it.current += it.step
-		}
-	} else {
-		if v <= it.stop {
-			return nil, false
-		}
-		if v < math.MinInt64-it.step {
-			it.done = true
-		} else {
-			it.current += it.step
-		}
+	value := it.current
+	it.advance()
+	return &Integer{Value: value}, true
+}
+
+func (it *rangeIterator) inBounds() bool {
+	if it.done || it.step == 0 {
+		return false
 	}
-	return &Integer{Value: v}, true
+	if it.step > 0 {
+		return it.current < it.stop
+	}
+	return it.current > it.stop
+}
+
+// Avoid wrapping int64 at either boundary when calculating the next element.
+func (it *rangeIterator) advance() {
+	if it.step > 0 && it.current > math.MaxInt64-it.step {
+		it.done = true
+		return
+	}
+	if it.step < 0 && it.current < math.MinInt64-it.step {
+		it.done = true
+		return
+	}
+	it.current += it.step
 }
 
 func (a *Array) Iterator() Iterator {
