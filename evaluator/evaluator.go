@@ -319,40 +319,29 @@ func evalAssignmentExpression(node *ast.InfixExpression, env *object.Environment
 }
 
 func evalLogicalExpression(operator string, left, right ast.Expression, env *object.Environment) object.Object {
-	// 左辺を評価
 	leftVal := Eval(left, env)
 	if isError(leftVal) {
 		return leftVal
 	}
 
 	switch operator {
-	case "&&":
-		// 左辺がfalseなら右辺を評価せずにfalseを返す（短絡評価）
+	case token.AND:
 		if !isTruthy(leftVal) {
 			return FALSE
 		}
-		// 左辺がtrueなら右辺を評価して返す
-		rightVal := Eval(right, env)
-		if isError(rightVal) {
-			return rightVal
-		}
-		return nativeBoolToBooleanObject(isTruthy(rightVal))
-
-	case "||":
-		// 左辺がtrueなら右辺を評価せずにtrueを返す（短絡評価）
+	case token.OR:
 		if isTruthy(leftVal) {
 			return TRUE
 		}
-		// 左辺がfalseなら右辺を評価して返す
-		rightVal := Eval(right, env)
-		if isError(rightVal) {
-			return rightVal
-		}
-		return nativeBoolToBooleanObject(isTruthy(rightVal))
-
 	default:
 		return newError("unknown operator: %s", operator)
 	}
+
+	rightVal := Eval(right, env)
+	if isError(rightVal) {
+		return rightVal
+	}
+	return nativeBoolToBooleanObject(isTruthy(rightVal))
 }
 
 func isTruthy(obj object.Object) bool {
