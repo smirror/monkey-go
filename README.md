@@ -68,7 +68,13 @@ false
 !true  // false
 true == false  // false
 true != false  // true
+true && false  // false
+true || false  // true
 ```
+
+`&&` and `||` use short-circuit evaluation: the right-hand expression is
+only evaluated when needed. `&&` has higher precedence than `||`, and both
+operators return a Boolean (`true` or `false`), not the original operand.
 
 ### Strings
 
@@ -170,18 +176,18 @@ print("Hello!", 42, true)
 ## Feature
 - [x] Unicode support
 - [ ] for-loops
-- [ ] logical operators
+- [x] logical operators
 
 ## Roadmap
 
 ### High Priority
 - [ ] Comments (`//`, `/* */`)
 - [ ] Float type
-- [ ] Logical operators (`&&`, `||`)
+- [x] Logical operators (`&&`, `||`)
 - [ ] Comparison operators (`<=`, `>=`)
 - [ ] Modulo operator (`%`)
 - [ ] for / while loops + break / continue
-- [ ] Variable reassignment (`x = 10`)
+- [x] Variable reassignment (`x = 10`)
 - [ ] `type()` function
 
 ### Medium Priority
