@@ -241,3 +241,28 @@ for (i = 0; i < 10; i++) {}`
 		}
 	}
 }
+
+func TestLineCommentsWithForLoops(t *testing.T) {
+	input := "for (i in range(2, 4)) { print(i); } // output: 2, 3\n10 / 2; // division is unaffected"
+	want := []token.Token{
+		{Type: token.FOR, Literal: "for"}, {Type: token.LPAREN, Literal: "("},
+		{Type: token.IDENT, Literal: "i"}, {Type: token.IN, Literal: "in"},
+		{Type: token.IDENT, Literal: "range"}, {Type: token.LPAREN, Literal: "("},
+		{Type: token.INT, Literal: "2"}, {Type: token.COMMA, Literal: ","},
+		{Type: token.INT, Literal: "4"}, {Type: token.RPAREN, Literal: ")"},
+		{Type: token.RPAREN, Literal: ")"}, {Type: token.LBRACE, Literal: "{"},
+		{Type: token.IDENT, Literal: "print"}, {Type: token.LPAREN, Literal: "("},
+		{Type: token.IDENT, Literal: "i"}, {Type: token.RPAREN, Literal: ")"},
+		{Type: token.SEMICOLON, Literal: ";"}, {Type: token.RBRACE, Literal: "}"},
+		{Type: token.INT, Literal: "10"}, {Type: token.SLASH, Literal: "/"},
+		{Type: token.INT, Literal: "2"}, {Type: token.SEMICOLON, Literal: ";"},
+		{Type: token.EOF, Literal: ""},
+	}
+	l := New(input)
+	for i, expected := range want {
+		got := l.NextToken()
+		if got != expected {
+			t.Fatalf("token[%d]: got %+v, want %+v", i, got, expected)
+		}
+	}
+}

@@ -32,6 +32,11 @@ func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
 	l.skipWhitespace()
+	// Allow the documented for examples to include trailing // comments.
+	for l.r == '/' && l.peekRune() == '/' {
+		l.skipLineComment()
+		l.skipWhitespace()
+	}
 
 	switch l.r {
 	case '=':
@@ -94,6 +99,12 @@ func (l *Lexer) NextToken() token.Token {
 
 	l.readRune()
 	return tok
+}
+
+func (l *Lexer) skipLineComment() {
+	for l.r != 0 && l.r != '\n' && l.r != '\r' {
+		l.readRune()
+	}
 }
 
 func (l *Lexer) skipWhitespace() {
