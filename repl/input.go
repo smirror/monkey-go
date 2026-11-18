@@ -64,15 +64,11 @@ type inputBalance struct {
 // consume returns true when it consumed both bytes of a // comment marker.
 func (b *inputBalance) consume(ch, next byte) bool {
 	if b.lineComment {
-		if ch == '\n' {
-			b.lineComment = false
-		}
+		b.lineComment = ch != '\n'
 		return false
 	}
 	if b.inString {
-		if ch == '"' {
-			b.inString = false
-		}
+		b.inString = ch != '"'
 		return false
 	}
 	if ch == '"' {
