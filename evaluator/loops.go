@@ -11,34 +11,49 @@ import (
 // i in that scope; assignments elsewhere still follow Environment.Reassign.
 func evalForStatement(stmt *ast.ForStatement, outer *object.Environment) object.Object {
 	env := object.NewEnclosedEnvironment(outer)
-	if stmt.Init != nil {
-		initResult := evalForInitializer(stmt.Init, env)
-		if isError(initResult) {
-			return initResult
-		}
+	if initResult := evalOptionalForInitializer(stmt.Init, env); isError(initResult) {
+		return initResult
 	}
 
 	for {
-		condition := Eval(stmt.Condition, env)
-		if isError(condition) {
-			return condition
-		}
-		if !isTruthy(condition) {
-			return NULL
-		}
-
-		result := Eval(stmt.Body, env)
-		if isLoopExit(result) {
+		result, again := evalForIteration(stmt, env)
+		if !again {
 			return result
 		}
-
-		if stmt.Post != nil {
-			postResult := Eval(stmt.Post, env)
-			if isError(postResult) {
-				return postResult
-			}
-		}
 	}
+}
+
+func evalOptionalForInitializer(init ast.Statement, env *object.Environment) object.Object {
+	if init == nil {
+		return NULL
+	}
+	return evalForInitializer(init, env)
+}
+
+func evalForIteration(stmt *ast.ForStatement, env *object.Environment) (object.Object, bool) {
+	condition := Eval(stmt.Condition, env)
+	if isError(condition) {
+		return condition, false
+	}
+	if !isTruthy(condition) {
+		return NULL, false
+	}
+
+	if result := Eval(stmt.Body, env); isLoopExit(result) {
+		return result, false
+	}
+	postResult := evalOptionalForPost(stmt.Post, env)
+	if isError(postResult) {
+		return postResult, false
+	}
+	return nil, true
+}
+
+func evalOptionalForPost(post ast.Expression, env *object.Environment) object.Object {
+	if post == nil {
+		return NULL
+	}
+	return Eval(post, env)
 }
 
 func evalForInitializer(init ast.Statement, env *object.Environment) object.Object {
