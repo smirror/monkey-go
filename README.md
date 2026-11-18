@@ -27,7 +27,8 @@ Feel free to type in commands
 >>
 ```
 
-Type `exit` to quit.
+Type `exit` to quit. Multi-line `for`, `if`, and function bodies are supported;
+the REPL uses a `.. ` continuation prompt until the delimiters close.
 
 ### Run tests
 
@@ -204,7 +205,7 @@ h[true]   // "yes"
 | `rest(arr)` | New array without the first element |
 | `push(arr, val)` | New array with val appended |
 | `print(...)` | Print values to stdout |
-| `range(end[, start, step])` | Lazy numeric range (1, 2, or 3 integer arguments; see above) |
+| `range(...)` | Lazy numeric range: `range(end)`, `range(start, end)`, or `range(start, end, step)` |
 
 ```monkey
 let arr = [1, 2, 3];
