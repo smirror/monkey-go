@@ -829,3 +829,142 @@ func checkStringOrError(t *testing.T, evaluated object.Object, expected string) 
 		t.Errorf("wrong error message. expected=%q, got=%q", expected, errObj.Message)
 	}
 }
+
+func TestLogicalOperators(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		// 基本的な論理演算
+		{"true && true", true},
+		{"true && false", false},
+		{"false && true", false},
+		{"false && false", false},
+		{"true || true", true},
+		{"true || false", true},
+		{"false || true", true},
+		{"false || false", false},
+
+		// 比較演算子との組み合わせ
+		{"5 > 3 && 10 < 20", true},
+		{"5 < 3 && 10 < 20", false},
+		{"5 > 3 || 10 > 20", true},
+		{"5 < 3 || 10 > 20", false},
+
+		// 複数の論理演算子
+		{"true && true && true", true},
+		{"true && true && false", false},
+		{"false || false || true", true},
+		{"false || false || false", false},
+
+		// 複合的な式
+		{"(5 > 3) && (10 < 20) && (7 == 7)", true},
+		{"(5 > 3) && (10 > 20) || (7 == 7)", true},
+		{"(5 < 3) || (10 > 20) || (7 != 7)", false},
+
+		// 優先順位のテスト（&&は||より優先順位が高い）
+		{"true || false && false", true}, // true || (false && false) = true
+		{"false && false || true", true}, // (false && false) || true = true
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		testBooleanObject(t, evaluated, tt.expected)
+	}
+}
+
+func TestLogicalOperatorShortCircuit(t *testing.T) {
+	tests := []struct {
+		input    string
+		expected bool
+	}{
+		// 短絡評価のテスト：エラーが発生しないことを確認
+		// falseの場合、右辺は評価されない
+		{`false && (10 / 0)`, false},
+
+		// trueの場合、右辺は評価されない
+		{`true || (10 / 0)`, true},
+
+		// 短絡評価が行われない場合
+		// 論理演算子は最後に評価された式の真偽値を返す
+		{`true && 5`, true},   // 5 は truthy なので true
+		{`false || 10`, true}, // 10 は truthy なので true
+		{`true && (5 > 3)`, true},
+		{`false || (5 > 3)`, true},
+	}
+
+	for _, tt := range tests {
+		evaluated := testEval(tt.input)
+		testBooleanObject(t, evaluated, tt.expected)
+	}
+}
+
+func TestLogicalOperatorErrorPropagation(t *testing.T) {
+	tests := []struct {
+		input       string
+		wantBool    bool
+		wantError   string
+	}{
+		{"false && missing_var", false, ""},
+		{"true || missing_var", true, ""},
+		{"true && missing_var", false, "identifier not found: missing_var"},
+		{"false || missing_var", false, "identifier not found: missing_var"},
+		{"missing_var && false", false, "identifier not found: missing_var"},
+		{"missing_var || true", false, "identifier not found: missing_var"},
+		{"true && (1 + true)", false, "type mismatch: INTEGER + BOOLEAN"},
+		{"false || (1 + true)", false, "type mismatch: INTEGER + BOOLEAN"},
+		{"false && (1 + true)", false, ""},
+		{"true || (1 + true)", true, ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := testEval(tt.input)
+			if tt.wantError != "" {
+				err, ok := got.(*object.Error)
+				if !ok {
+					t.Fatalf("expected error %q; got %T (%+v)", tt.wantError, got, got)
+				}
+				if err.Message != tt.wantError {
+					t.Fatalf("expected error %q; got %q", tt.wantError, err.Message)
+				}
+				return
+			}
+			testBooleanObject(t, got, tt.wantBool)
+		})
+	}
+}
+
+func TestLogicalOperatorShortCircuitAssignments(t *testing.T) {
+	tests := []struct {
+		input string
+		want  int64
+	}{
+		{"let x = 0; false && (x = 1); x;", 0},
+		{"let x = 0; true || (x = 1); x;", 0},
+		{"let x = 0; true && (x = 1); x;", 1},
+		{"let x = 0; false || (x = 1); x;", 1},
+		{"let x = 0; false || true && (x = 2); x;", 2},
+		{"let x = 0; true || false && (x = 2); x;", 0},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			testIntegerObject(t, testEval(tt.input), tt.want)
+		})
+	}
+}
+
+func TestLogicalOperatorAssignmentPrecedence(t *testing.T) {
+	tests := []struct {
+		input string
+		want  bool
+	}{
+		{"let x = false; x = false || true; x;", true},
+		{"let x = true; x = true && false; x;", false},
+		{"let x = false; let y = false; x = y = true; x && y;", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			testBooleanObject(t, testEval(tt.input), tt.want)
+		})
+	}
+}

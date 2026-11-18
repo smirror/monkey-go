@@ -153,3 +153,63 @@ if (5<10){
 
 	}
 }
+
+func TestLogicalOperators(t *testing.T) {
+	input := `true && false;
+true || false;`
+
+	tests := []struct {
+		expectedType    token.TokenType
+		expectedLiteral string
+	}{
+		{token.TRUE, "true"},
+		{token.AND, "&&"},
+		{token.FALSE, "false"},
+		{token.SEMICOLON, ";"},
+
+		{token.TRUE, "true"},
+		{token.OR, "||"},
+		{token.FALSE, "false"},
+		{token.SEMICOLON, ";"},
+
+		{token.EOF, ""},
+	}
+
+	l := New(input)
+
+	for i, tt := range tests {
+		tok := l.NextToken()
+
+		if tok.Type != tt.expectedType {
+			t.Fatalf("tests[%d] - tokentype wrong. expected=%q, got=%q", i, tt.expectedType, tok.Type)
+		}
+
+		if tok.Literal != tt.expectedLiteral {
+			t.Fatalf("tests[%d] - literal wrong. expected=%q, got=%q", i, tt.expectedLiteral, tok.Literal)
+		}
+	}
+}
+
+func TestInvalidLogicalOperators(t *testing.T) {
+	tests := []struct {
+		input string
+		want  []token.Token
+	}{
+		{"&", []token.Token{{Type: token.ILLEGAL, Literal: "&"}, {Type: token.EOF, Literal: ""}}},
+		{"|", []token.Token{{Type: token.ILLEGAL, Literal: "|"}, {Type: token.EOF, Literal: ""}}},
+		{"&Ħ", []token.Token{{Type: token.ILLEGAL, Literal: "&"}, {Type: token.ILLEGAL, Literal: "Ħ"}, {Type: token.EOF, Literal: ""}}},
+		{"|ż", []token.Token{{Type: token.ILLEGAL, Literal: "|"}, {Type: token.ILLEGAL, Literal: "ż"}, {Type: token.EOF, Literal: ""}}},
+		{"&Ħ&&", []token.Token{{Type: token.ILLEGAL, Literal: "&"}, {Type: token.ILLEGAL, Literal: "Ħ"}, {Type: token.AND, Literal: "&&"}, {Type: token.EOF, Literal: ""}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			l := New(tt.input)
+			for i, want := range tt.want {
+				got := l.NextToken()
+				if got.Type != want.Type || got.Literal != want.Literal {
+					t.Fatalf("token[%d] got=%+v, want=%+v", i, got, want)
+				}
+			}
+		})
+	}
+}

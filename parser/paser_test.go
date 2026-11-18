@@ -975,3 +975,30 @@ func TestParsingHashMapLiteralsWithExpressions(t *testing.T) {
 		testFunc(value)
 	}
 }
+
+func TestLogicalOperatorPrecedenceAST(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"true || false && false", "(true || (false && false))"},
+		{"false && true || true", "((false && true) || true)"},
+		{"x = true || false", "(x = (true || false))"},
+		{"x = y = 1", "(x = (y = 1))"},
+		{"1 < 2 && 3 > 2 || false", "(((1 < 2) && (3 > 2)) || false)"},
+		{"(true || false) && false", "((true || false) && false)"},
+		{"!false || true", "((!false) || true)"},
+		{"true && false && true", "((true && false) && true)"},
+		{"false || false || true", "((false || false) || true)"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			p := New(lexer.New(tt.input))
+			program := p.ParseProgram()
+			checkParserErrors(t, p)
+			if got := program.String(); got != tt.want {
+				t.Errorf("wrong AST: got %q, want %q", got, tt.want)
+			}
+		})
+	}
+}

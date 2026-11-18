@@ -284,6 +284,10 @@ func evalInfixExpressionNode(node *ast.InfixExpression, env *object.Environment)
 		return evalAssignmentExpression(node, env)
 	}
 
+	if node.Operator == token.AND || node.Operator == token.OR {
+		return evalLogicalExpression(node.Operator, node.Left, node.Right, env)
+	}
+
 	left := Eval(node.Left, env)
 	if isError(left) {
 		return left
@@ -312,6 +316,32 @@ func evalAssignmentExpression(node *ast.InfixExpression, env *object.Environment
 		return newError("identifier not found: " + ident.Value)
 	}
 	return val
+}
+
+func evalLogicalExpression(operator string, left, right ast.Expression, env *object.Environment) object.Object {
+	leftVal := Eval(left, env)
+	if isError(leftVal) {
+		return leftVal
+	}
+
+	switch operator {
+	case token.AND:
+		if !isTruthy(leftVal) {
+			return FALSE
+		}
+	case token.OR:
+		if isTruthy(leftVal) {
+			return TRUE
+		}
+	default:
+		return newError("unknown operator: %s", operator)
+	}
+
+	rightVal := Eval(right, env)
+	if isError(rightVal) {
+		return rightVal
+	}
+	return nativeBoolToBooleanObject(isTruthy(rightVal))
 }
 
 func isTruthy(obj object.Object) bool {
