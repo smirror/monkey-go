@@ -98,6 +98,52 @@ if (x > 5) {
 
 `if` is an expression and returns a value.
 
+### For Loops
+
+Two for-loop forms are supported. In both forms, the body must be enclosed in `{}`.
+
+**Iteration over a range or array:**
+
+```monkey
+for (i in range(2, 10)) {
+    print(i);
+}
+// prints 2, 3, ... 9
+
+for (value in [10, 20, 30]) {
+    print(value);
+}
+```
+
+`range(end)`, `range(start, end)`, and `range(start, end, step)` accept
+integer arguments. The end value is exclusive, the default step is 1,
+and the step must not be zero. Negative steps iterate downward.
+`range` is lazy and does not allocate a list of numbers. Arrays and
+array-valued expressions can also be used after `in`.
+
+**Condition-controlled (semicolon-separated):**
+
+```monkey
+for (i = 0; i < 10; i++) {
+    print(i);
+}
+// prints 0, 1, ... 9
+```
+
+The header uses `;` between initialization, condition, and update.
+The condition is required; initialization and update may be omitted.
+`let i = 0` can also be used as the initializer. `i++` increments an
+integer variable by one, and its expression value is the old value.
+
+Both forms create a loop-local scope. In `for (i = 0; ...)`, `i` is
+initialized locally even without `let`; an outer variable with the
+same name is not overwritten. Assignments to other existing variables
+still update their enclosing scope. A loop produces `null`, and
+`return` and errors propagate immediately. `break`, `continue`, and
+`while` are not implemented yet.
+
+Single-line `//` comments are supported; `/* ... */` comments are not.
+
 ### Functions
 
 ```monkey
@@ -158,6 +204,7 @@ h[true]   // "yes"
 | `rest(arr)` | New array without the first element |
 | `push(arr, val)` | New array with val appended |
 | `print(...)` | Print values to stdout |
+| `range(end[, start, step])` | Lazy numeric range (1, 2, or 3 integer arguments; see above) |
 
 ```monkey
 let arr = [1, 2, 3];
@@ -175,18 +222,20 @@ print("Hello!", 42, true)
 
 ## Feature
 - [x] Unicode support
-- [ ] for-loops
+- [x] for-loops (`for-in` / semicolon-separated classic `for`)
 - [x] logical operators
 
 ## Roadmap
 
 ### High Priority
-- [ ] Comments (`//`, `/* */`)
+- [x] Single-line comments (`//`)
+- [ ] Block comments (`/* */`)
 - [ ] Float type
 - [x] Logical operators (`&&`, `||`)
 - [ ] Comparison operators (`<=`, `>=`)
 - [ ] Modulo operator (`%`)
-- [ ] for / while loops + break / continue
+- [x] `for-in` and classic `for` loops
+- [ ] `while` loops + `break` / `continue`
 - [x] Variable reassignment (`x = 10`)
 - [ ] `type()` function
 
