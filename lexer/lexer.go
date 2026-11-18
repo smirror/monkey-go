@@ -28,6 +28,14 @@ func (l *Lexer) readRune() {
 	l.readPosition += 1
 }
 
+var singleCharacterTokens = map[rune]token.TokenType{
+	'-': token.MINUS, '/': token.SLASH, '*': token.ASTERISK,
+	'<': token.LT, '>': token.GT, ';': token.SEMICOLON,
+	':': token.COLON, ',': token.COMMA, '(': token.LPAREN,
+	')': token.RPAREN, '{': token.LBRACE, '}': token.RBRACE,
+	'[': token.LBRACKET, ']': token.RBRACKET,
+}
+
 func (l *Lexer) NextToken() token.Token {
 	var tok token.Token
 
@@ -43,58 +51,33 @@ func (l *Lexer) NextToken() token.Token {
 		tok = l.makeTwoCharToken('=', token.EQ, token.ASSIGN)
 	case '+':
 		tok = l.makeTwoCharToken('+', token.INCREMENT, token.PLUS)
-	case '-':
-		tok = newToken(token.MINUS, l.r)
 	case '!':
 		tok = l.makeTwoCharToken('=', token.NOT_EQ, token.BANG)
-	case '/':
-		tok = newToken(token.SLASH, l.r)
-	case '*':
-		tok = newToken(token.ASTERISK, l.r)
-	case '<':
-		tok = newToken(token.LT, l.r)
-	case '>':
-		tok = newToken(token.GT, l.r)
 	case '&':
 		tok = l.makeTwoCharToken('&', token.AND, token.ILLEGAL)
 	case '|':
 		tok = l.makeTwoCharToken('|', token.OR, token.ILLEGAL)
-	case ';':
-		tok = newToken(token.SEMICOLON, l.r)
-	case ':':
-		tok = newToken(token.COLON, l.r)
-	case ',':
-		tok = newToken(token.COMMA, l.r)
-	case '(':
-		tok = newToken(token.LPAREN, l.r)
-	case ')':
-		tok = newToken(token.RPAREN, l.r)
-	case '{':
-		tok = newToken(token.LBRACE, l.r)
-	case '}':
-		tok = newToken(token.RBRACE, l.r)
-	case '[':
-		tok = newToken(token.LBRACKET, l.r)
-	case ']':
-		tok = newToken(token.RBRACKET, l.r)
 	case '"':
 		tok.Type = token.STRING
 		tok.Literal = l.readString()
 	case 0:
-		tok.Literal = ""
-		tok.Type = token.EOF
+		tok = token.Token{Type: token.EOF, Literal: ""}
 	default:
+		if kind, ok := singleCharacterTokens[l.r]; ok {
+			tok = newToken(kind, l.r)
+			break
+		}
 		if isLetter(l.r) {
 			tok.Literal = l.readIdentifier()
 			tok.Type = token.LookupIdent(tok.Literal)
 			return tok
-		} else if isDigit(l.r) {
+		}
+		if isDigit(l.r) {
 			tok.Type = token.INT
 			tok.Literal = l.readNumber()
 			return tok
-		} else {
-			tok = newToken(token.ILLEGAL, l.r)
 		}
+		tok = newToken(token.ILLEGAL, l.r)
 	}
 
 	l.readRune()
