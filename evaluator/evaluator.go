@@ -32,11 +32,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return Eval(node.Expression, env)
 
 	case *ast.ReturnStatement:
-		val := Eval(node.ReturnValue, env)
-		if isError(val) {
-			return val
-		}
-		return &object.ReturnValue{Value: val}
+		return evalReturnStatement(node, env)
 
 	// Expressions
 	case *ast.IntegerLiteral:
@@ -49,11 +45,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.String{Value: node.Value}
 
 	case *ast.PrefixExpression:
-		right := Eval(node.Right, env)
-		if isError(right) {
-			return right
-		}
-		return evalPrefixExpression(node.Operator, right)
+		return evalPrefixExpressionNode(node, env)
 
 	case *ast.InfixExpression:
 		return evalInfixExpressionNode(node, env)
@@ -68,12 +60,7 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return evalIdentifier(node, env)
 
 	case *ast.LetStatement:
-		val := Eval(node.Value, env)
-		if isError(val) {
-			return val
-		}
-		env.Set(node.Name.Value, val)
-		return val
+		return evalLetStatement(node, env)
 
 	case *ast.FunctionLiteral:
 		params := node.Parameters
@@ -81,35 +68,13 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Function{Parameters: params, Env: env, Body: body}
 
 	case *ast.CallExpression:
-		function := Eval(node.Function, env)
-		if isError(function) {
-			return function
-		}
-
-		arg := evalExpressions(node.Arguments, env)
-		if len(arg) == 1 && isError(arg[0]) {
-			return arg[0]
-		}
-
-		return applyFunction(function, arg)
+		return evalCallExpression(node, env)
 
 	case *ast.ArrayLiteral:
-		elements := evalExpressions(node.Elements, env)
-		if len(elements) == 1 && isError(elements[0]) {
-			return elements[0]
-		}
-		return &object.Array{Elements: elements}
+		return evalArrayLiteral(node, env)
 
 	case *ast.IndexExpression:
-		left := Eval(node.Left, env)
-		if isError(left) {
-			return left
-		}
-		index := Eval(node.Index, env)
-		if isError(index) {
-			return index
-		}
-		return evalIndexExpression(left, index)
+		return evalIndexExpressionNode(node, env)
 
 	case *ast.HashMapLiteral:
 		return evalHashMapLiteral(node, env)
