@@ -80,48 +80,68 @@ func evaluateREPLSource(source string, env *object.Environment, out io.Writer) b
 // Keep reading when an unclosed delimiter requires another input line.
 // Braces inside strings and // comments do not affect the balance.
 func needsMoreInput(source string) bool {
-	braces, parens, brackets := 0, 0, 0
-	inString, lineComment := false, false
-
+	var balance inputBalance
 	for i := 0; i < len(source); i++ {
-		ch := source[i]
-		if lineComment {
-			if ch == '\n' {
-				lineComment = false
-			}
-			continue
+		var next byte
+		if i+1 < len(source) {
+			next = source[i+1]
 		}
-		if inString {
-			if ch == '"' {
-				inString = false
-			}
-			continue
-		}
-		if ch == '"' {
-			inString = true
-			continue
-		}
-		if ch == '/' && i+1 < len(source) && source[i+1] == '/' {
-			lineComment = true
-			i++
-			continue
-		}
-		switch ch {
-		case '{':
-			braces++
-		case '}':
-			braces--
-		case '(':
-			parens++
-		case ')':
-			parens--
-		case '[':
-			brackets++
-		case ']':
-			brackets--
+		if balance.consume(source[i], next) {
+			i++ // Skip the second '/' in a line-comment marker.
 		}
 	}
-	return braces > 0 || parens > 0 || brackets > 0 || inString
+	return balance.braces > 0 || balance.parens > 0 || balance.brackets > 0 || balance.inString
+}
+
+type inputBalance struct {
+	braces      int
+	parens      int
+	brackets    int
+	inString    bool
+	lineComment bool
+}
+
+// consume returns true when it consumed both bytes of a // comment marker.
+func (b *inputBalance) consume(ch, next byte) bool {
+	if b.lineComment {
+		if ch == '\n' {
+			b.lineComment = false
+		}
+		return false
+	}
+	if b.inString {
+		if ch == '"' {
+			b.inString = false
+		}
+		return false
+	}
+	if ch == '"' {
+		b.inString = true
+		return false
+	}
+	if ch == '/' && next == '/' {
+		b.lineComment = true
+		return true
+	}
+	b.trackDelimiter(ch)
+	return false
+}
+
+func (b *inputBalance) trackDelimiter(ch byte) {
+	switch ch {
+	case '{':
+		b.braces++
+	case '}':
+		b.braces--
+	case '(':
+		b.parens++
+	case ')':
+		b.parens--
+	case '[':
+		b.brackets++
+	case ']':
+		b.brackets--
+	}
 }
 
 const MONKEY_FACE = `            __,__
