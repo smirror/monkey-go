@@ -28,3 +28,13 @@ func (e *Environment) Set(name string, val Object) Object {
 	e.store[name] = val
 	return val
 }
+
+func (e *Environment) Reassign(name string, val Object) (Object, bool) {
+	for env := e; env != nil; env = env.outer {
+		if _, ok := env.store[name]; ok {
+			env.store[name] = val
+			return val, true
+		}
+	}
+	return nil, false
+}
