@@ -2,6 +2,7 @@ package object
 
 import (
 	"math"
+	"reflect"
 	"testing"
 )
 
@@ -21,20 +22,32 @@ func TestRangeIterator(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			iter := tt.rng.Iterator()
-			var got []int64
-			for value, ok := iter.Next(); ok; value, ok = iter.Next() {
-				got = append(got, value.(*Integer).Value)
-			}
-			if len(got) != len(tt.want) {
+			got := collectRangeValues(tt.rng.Iterator())
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Fatalf("got %v, want %v", got, tt.want)
 			}
-			for i := range tt.want {
-				if got[i] != tt.want[i] {
-					t.Fatalf("got %v, want %v", got, tt.want)
-				}
-			}
 		})
+	}
+}
+
+func collectRangeValues(iter Iterator) []int64 {
+	var values []int64
+	for {
+		value, ok := iter.Next()
+		if !ok {
+			return values
+		}
+		values = append(values, value.(*Integer).Value)
+	}
+}
+
+func TestRangeObjectInspect(t *testing.T) {
+	rng := &Range{Start: 2, Stop: 8, Step: 2}
+	if got := rng.Type(); got != RANGE_OBJ {
+		t.Errorf("wrong type: %s", got)
+	}
+	if got := rng.Inspect(); got != "range(2, 8, 2)" {
+		t.Errorf("wrong representation: %q", got)
 	}
 }
 
