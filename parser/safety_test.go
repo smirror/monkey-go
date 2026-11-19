@@ -46,20 +46,25 @@ func TestParserInvalidInputDoesNotAppendNilStatements(t *testing.T) {
 	}
 	for _, input := range inputs {
 		t.Run(input, func(t *testing.T) {
-			p := New(lexer.New(input))
-			program := p.ParseProgram()
-			if len(p.Errors()) == 0 {
-				t.Fatalf("expected parser errors for %q", input)
-			}
-			for _, stmt := range program.Statements {
-				if stmt == nil {
-					t.Fatal("nil statement in parsed program")
-				}
-				if e, ok := stmt.(*ast.ExpressionStatement); ok && e.Expression == nil {
-					t.Fatal("expression statement has nil expression")
-				}
-			}
+			checkInvalidInputHasNoNilStatements(t, input)
 		})
+	}
+}
+
+func checkInvalidInputHasNoNilStatements(t *testing.T, input string) {
+	t.Helper()
+	p := New(lexer.New(input))
+	program := p.ParseProgram()
+	if len(p.Errors()) == 0 {
+		t.Fatalf("expected parser errors for %q", input)
+	}
+	for _, stmt := range program.Statements {
+		if stmt == nil {
+			t.Fatal("nil statement in parsed program")
+		}
+		if e, ok := stmt.(*ast.ExpressionStatement); ok && e.Expression == nil {
+			t.Fatal("expression statement has nil expression")
+		}
 	}
 }
 

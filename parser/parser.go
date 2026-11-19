@@ -167,11 +167,17 @@ func (p *Parser) parseLetStatement() ast.Statement {
 		return nil
 	}
 
+	p.consumeOptionalSemicolon()
+
+	return stmt
+}
+
+// consumeOptionalSemicolon lets statement parsing stop at the current expression
+// when the next token starts a new statement.
+func (p *Parser) consumeOptionalSemicolon() {
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
-
-	return stmt
 }
 
 func (p *Parser) curTokenIs(t token.TokenType) bool {
@@ -202,9 +208,7 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 		return nil
 	}
 
-	if p.peekTokenIs(token.SEMICOLON) {
-		p.nextToken()
-	}
+	p.consumeOptionalSemicolon()
 
 	return stmt
 }
@@ -217,9 +221,7 @@ func (p *Parser) parseExpressionStatement() ast.Statement {
 		return nil
 	}
 
-	if p.peekTokenIs(token.SEMICOLON) {
-		p.nextToken()
-	}
+	p.consumeOptionalSemicolon()
 
 	return stmt
 }
