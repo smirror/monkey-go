@@ -126,7 +126,9 @@ func (p *Parser) ParseProgram() *ast.Program {
 
 	for p.curToken.Type != token.EOF {
 		stmt := p.parseStatement()
-		program.Statements = append(program.Statements, stmt)
+		if stmt != nil {
+			program.Statements = append(program.Statements, stmt)
+		}
 		p.nextToken()
 	}
 	return program
@@ -145,7 +147,7 @@ func (p *Parser) parseStatement() ast.Statement {
 	}
 }
 
-func (p *Parser) parseLetStatement() *ast.LetStatement {
+func (p *Parser) parseLetStatement() ast.Statement {
 	stmt := &ast.LetStatement{Token: p.curToken}
 
 	if !p.expectPeek(token.IDENT) {
@@ -161,8 +163,11 @@ func (p *Parser) parseLetStatement() *ast.LetStatement {
 	p.nextToken()
 
 	stmt.Value = p.parseExpression(LOWEST)
+	if stmt.Value == nil {
+		return nil
+	}
 
-	if !p.curTokenIs(token.SEMICOLON) {
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 
@@ -193,18 +198,24 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 	p.nextToken()
 
 	stmt.ReturnValue = p.parseExpression(LOWEST)
+	if stmt.ReturnValue == nil {
+		return nil
+	}
 
-	for !p.curTokenIs(token.SEMICOLON) {
+	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
 
 	return stmt
 }
 
-func (p *Parser) parseExpressionStatement() *ast.ExpressionStatement {
+func (p *Parser) parseExpressionStatement() ast.Statement {
 	stmt := &ast.ExpressionStatement{Token: p.curToken}
 
 	stmt.Expression = p.parseExpression(LOWEST)
+	if stmt.Expression == nil {
+		return nil
+	}
 
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
@@ -229,6 +240,9 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		return nil
 	}
 	leftExp := prefix()
+	if leftExp == nil {
+		return nil
+	}
 
 	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
@@ -239,6 +253,9 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		p.nextToken()
 
 		leftExp = infix(leftExp)
+		if leftExp == nil {
+			return nil
+		}
 	}
 
 	return leftExp
@@ -266,6 +283,9 @@ func (p *Parser) parsePrefixExpression() ast.Expression {
 	p.nextToken()
 
 	expression.Right = p.parseExpression(PREFIX)
+	if expression.Right == nil {
+		return nil
+	}
 
 	return expression
 }
@@ -287,6 +307,9 @@ func (p *Parser) parseInfixExpressionWithPrecedence(left ast.Expression, precede
 
 	p.nextToken()
 	expression.Right = p.parseExpression(precedence)
+	if expression.Right == nil {
+		return nil
+	}
 
 	return expression
 }
@@ -363,8 +386,14 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 
 	for !p.curTokenIs(token.RBRACE) && !p.curTokenIs(token.EOF) {
 		stmt := p.parseStatement()
-		block.Statements = append(block.Statements, stmt)
+		if stmt != nil {
+			block.Statements = append(block.Statements, stmt)
+		}
 		p.nextToken()
+	}
+
+	if p.curTokenIs(token.EOF) {
+		p.errors = append(p.errors, "unterminated block: expected } before EOF")
 	}
 
 	return block
