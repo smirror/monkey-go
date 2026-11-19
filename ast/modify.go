@@ -27,6 +27,13 @@ func Modify(node Node, fn Modifier) Node {
 		if n.ReturnValue != nil {
 			n.ReturnValue = Modify(n.ReturnValue, fn).(Expression)
 		}
+	case *ForInStatement:
+		if n.Iterable != nil {
+			n.Iterable = Modify(n.Iterable, fn).(Expression)
+		}
+		if n.Body != nil {
+			n.Body = Modify(n.Body, fn).(*BlockStatement)
+		}
 	case *BlockStatement:
 		for i, statement := range n.Statements {
 			if statement != nil {
