@@ -121,17 +121,20 @@ func (p *Parser) nextToken() {
 }
 
 func (p *Parser) ParseProgram() *ast.Program {
-	program := &ast.Program{}
-	program.Statements = []ast.Statement{}
+	return &ast.Program{Statements: p.parseStatements(token.EOF)}
+}
 
-	for p.curToken.Type != token.EOF {
-		stmt := p.parseStatement()
-		if stmt != nil {
-			program.Statements = append(program.Statements, stmt)
+// parseStatements is shared by the top level and nested blocks. Failed
+// statements are omitted from the AST while parse errors remain available.
+func (p *Parser) parseStatements(end token.TokenType) []ast.Statement {
+	statements := []ast.Statement{}
+	for !p.curTokenIs(token.EOF) && !p.curTokenIs(end) {
+		if stmt := p.parseStatement(); stmt != nil {
+			statements = append(statements, stmt)
 		}
 		p.nextToken()
 	}
-	return program
+	return statements
 }
 
 func (p *Parser) parseStatement() ast.Statement {
@@ -382,22 +385,12 @@ func (p *Parser) parseIfExpression() ast.Expression {
 
 func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	block := &ast.BlockStatement{Token: p.curToken}
-	block.Statements = []ast.Statement{}
 
 	p.nextToken()
-
-	for !p.curTokenIs(token.RBRACE) && !p.curTokenIs(token.EOF) {
-		stmt := p.parseStatement()
-		if stmt != nil {
-			block.Statements = append(block.Statements, stmt)
-		}
-		p.nextToken()
-	}
-
+	block.Statements = p.parseStatements(token.RBRACE)
 	if p.curTokenIs(token.EOF) {
 		p.errors = append(p.errors, "unterminated block: expected } before EOF")
 	}
-
 	return block
 }
 
