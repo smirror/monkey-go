@@ -15,14 +15,16 @@ func TestQuoteErrors(t *testing.T) {
 		{`quote(unquote());`, "unquote expects 1 argument, got 0"},
 		{`quote(unquote(1, 2));`, "unquote expects 1 argument, got 2"},
 		{`quote(unquote(missing));`, "identifier not found: missing"},
-		{`quote(unquote(fn() {}()));`, "unquote evaluated to no value"},
+		{`quote(unquote(noValue()));`, "unquote evaluated to no value"},
 		{`quote(unquote([]));`, "cannot unquote ARRAY as an expression"},
 		{`quote(unquote(fn() { 1; }));`, "cannot unquote FUNCTION as an expression"},
 		{`quote(unquote(if (false) { 1; }));`, "cannot unquote NULL as an expression"},
 	}
 	for _, tc := range cases {
 		t.Run(tc.input, func(t *testing.T) {
-			got := Eval(parseMacroProgram(t, tc.input), object.NewEnvironment())
+			env := object.NewEnvironment()
+			env.Set("noValue", &object.Builtin{Fn: func(args ...object.Object) object.Object { return nil }})
+			got := Eval(parseMacroProgram(t, tc.input), env)
 			err, ok := got.(*object.Error)
 			if !ok {
 				t.Fatalf("expected error %q, got %T (%v)", tc.want, got, got)
