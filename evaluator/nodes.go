@@ -31,6 +31,9 @@ func evalLetStatement(node *ast.LetStatement, env *object.Environment) object.Ob
 }
 
 func evalCallExpression(node *ast.CallExpression, env *object.Environment) object.Object {
+	if isCallNamed(node, "quote") {
+		return evalQuoteCall(node, env)
+	}
 	function := Eval(node.Function, env)
 	if isError(function) {
 		return function

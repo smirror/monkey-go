@@ -11,127 +11,120 @@ func Modify(node Node, fn Modifier) Node {
 	switch n := node.(type) {
 	case *Program:
 		copyNode := *n
-		copyNode.Statements = make([]Statement, len(n.Statements))
-		for i, statement := range n.Statements {
-			if statement != nil {
-				copyNode.Statements[i] = Modify(statement, fn).(Statement)
-			}
-		}
+		copyNode.Statements = modifyNodes(n.Statements, fn)
 		node = &copyNode
+	case Statement:
+		node = modifyStatementChildren(n, fn)
+	case Expression:
+		node = modifyExpressionChildren(n, fn)
+	}
+	return fn(node)
+}
+
+func modifyStatementChildren(node Statement, fn Modifier) Statement {
+	switch n := node.(type) {
 	case *ExpressionStatement:
 		copyNode := *n
-		if n.Expression != nil {
-			copyNode.Expression = Modify(n.Expression, fn).(Expression)
-		}
-		node = &copyNode
+		copyNode.Expression = modifyExpression(n.Expression, fn)
+		return &copyNode
 	case *LetStatement:
 		copyNode := *n
-		if n.Value != nil {
-			copyNode.Value = Modify(n.Value, fn).(Expression)
-		}
-		node = &copyNode
+		copyNode.Value = modifyExpression(n.Value, fn)
+		return &copyNode
 	case *ReturnStatement:
 		copyNode := *n
-		if n.ReturnValue != nil {
-			copyNode.ReturnValue = Modify(n.ReturnValue, fn).(Expression)
-		}
-		node = &copyNode
+		copyNode.ReturnValue = modifyExpression(n.ReturnValue, fn)
+		return &copyNode
 	case *ForInStatement:
 		copyNode := *n
-		if n.Iterable != nil {
-			copyNode.Iterable = Modify(n.Iterable, fn).(Expression)
-		}
-		if n.Body != nil {
-			copyNode.Body = Modify(n.Body, fn).(*BlockStatement)
-		}
-		node = &copyNode
+		copyNode.Iterable = modifyExpression(n.Iterable, fn)
+		copyNode.Body = modifyBlock(n.Body, fn)
+		return &copyNode
 	case *BlockStatement:
 		copyNode := *n
-		copyNode.Statements = make([]Statement, len(n.Statements))
-		for i, statement := range n.Statements {
-			if statement != nil {
-				copyNode.Statements[i] = Modify(statement, fn).(Statement)
-			}
-		}
-		node = &copyNode
+		copyNode.Statements = modifyNodes(n.Statements, fn)
+		return &copyNode
+	}
+	return node
+}
+
+func modifyExpressionChildren(node Expression, fn Modifier) Expression {
+	switch n := node.(type) {
 	case *PrefixExpression:
 		copyNode := *n
-		if n.Right != nil {
-			copyNode.Right = Modify(n.Right, fn).(Expression)
-		}
-		node = &copyNode
+		copyNode.Right = modifyExpression(n.Right, fn)
+		return &copyNode
 	case *InfixExpression:
 		copyNode := *n
-		if n.Left != nil {
-			copyNode.Left = Modify(n.Left, fn).(Expression)
-		}
-		if n.Right != nil {
-			copyNode.Right = Modify(n.Right, fn).(Expression)
-		}
-		node = &copyNode
+		copyNode.Left = modifyExpression(n.Left, fn)
+		copyNode.Right = modifyExpression(n.Right, fn)
+		return &copyNode
 	case *IfExpression:
 		copyNode := *n
-		if n.Condition != nil {
-			copyNode.Condition = Modify(n.Condition, fn).(Expression)
-		}
-		if n.Consequence != nil {
-			copyNode.Consequence = Modify(n.Consequence, fn).(*BlockStatement)
-		}
-		if n.Alternative != nil {
-			copyNode.Alternative = Modify(n.Alternative, fn).(*BlockStatement)
-		}
-		node = &copyNode
-	case *FunctionLiteral:
-		copyNode := *n
-		if n.Body != nil {
-			copyNode.Body = Modify(n.Body, fn).(*BlockStatement)
-		}
-		node = &copyNode
-	case *MacroLiteral:
-		copyNode := *n
-		if n.Body != nil {
-			copyNode.Body = Modify(n.Body, fn).(*BlockStatement)
-		}
-		node = &copyNode
+		copyNode.Condition = modifyExpression(n.Condition, fn)
+		copyNode.Consequence = modifyBlock(n.Consequence, fn)
+		copyNode.Alternative = modifyBlock(n.Alternative, fn)
+		return &copyNode
 	case *CallExpression:
 		copyNode := *n
-		if n.Function != nil {
-			copyNode.Function = Modify(n.Function, fn).(Expression)
-		}
-		copyNode.Arguments = make([]Expression, len(n.Arguments))
-		for i, arg := range n.Arguments {
-			if arg != nil {
-				copyNode.Arguments[i] = Modify(arg, fn).(Expression)
-			}
-		}
-		node = &copyNode
-	case *ArrayLiteral:
-		copyNode := *n
-		copyNode.Elements = make([]Expression, len(n.Elements))
-		for i, element := range n.Elements {
-			if element != nil {
-				copyNode.Elements[i] = Modify(element, fn).(Expression)
-			}
-		}
-		node = &copyNode
+		copyNode.Function = modifyExpression(n.Function, fn)
+		copyNode.Arguments = modifyNodes(n.Arguments, fn)
+		return &copyNode
 	case *IndexExpression:
 		copyNode := *n
-		if n.Left != nil {
-			copyNode.Left = Modify(n.Left, fn).(Expression)
-		}
-		if n.Index != nil {
-			copyNode.Index = Modify(n.Index, fn).(Expression)
-		}
-		node = &copyNode
+		copyNode.Left = modifyExpression(n.Left, fn)
+		copyNode.Index = modifyExpression(n.Index, fn)
+		return &copyNode
+	}
+	return modifyLiteralChildren(node, fn)
+}
+
+func modifyLiteralChildren(node Expression, fn Modifier) Expression {
+	switch n := node.(type) {
+	case *FunctionLiteral:
+		copyNode := *n
+		copyNode.Body = modifyBlock(n.Body, fn)
+		return &copyNode
+	case *MacroLiteral:
+		copyNode := *n
+		copyNode.Body = modifyBlock(n.Body, fn)
+		return &copyNode
+	case *ArrayLiteral:
+		copyNode := *n
+		copyNode.Elements = modifyNodes(n.Elements, fn)
+		return &copyNode
 	case *HashMapLiteral:
 		copyNode := *n
 		copyNode.Pairs = make(map[Expression]Expression, len(n.Pairs))
 		for key, value := range n.Pairs {
 			newKey := Modify(key, fn).(Expression)
-			newValue := Modify(value, fn).(Expression)
-			copyNode.Pairs[newKey] = newValue
+			copyNode.Pairs[newKey] = Modify(value, fn).(Expression)
 		}
-		node = &copyNode
+		return &copyNode
 	}
-	return fn(node)
+	return node
+}
+
+func modifyNodes[T Node](nodes []T, fn Modifier) []T {
+	rewritten := make([]T, len(nodes))
+	for i, node := range nodes {
+		if Node(node) != nil {
+			rewritten[i] = Modify(node, fn).(T)
+		}
+	}
+	return rewritten
+}
+
+func modifyExpression(node Expression, fn Modifier) Expression {
+	if node == nil {
+		return nil
+	}
+	return Modify(node, fn).(Expression)
+}
+
+func modifyBlock(node *BlockStatement, fn Modifier) *BlockStatement {
+	if node == nil {
+		return nil
+	}
+	return Modify(node, fn).(*BlockStatement)
 }

@@ -23,8 +23,8 @@ func DefineMacros(program *ast.Program, env *object.Environment) {
 		}
 		env.Set(declaration.Name.Value, &object.Macro{
 			Parameters: literal.Parameters,
-			Body: literal.Body,
-			Env: env,
+			Body:       literal.Body,
+			Env:        env,
 		})
 	}
 	program.Statements = remaining
@@ -35,56 +35,7 @@ func DefineMacros(program *ast.Program, env *object.Environment) {
 func ExpandMacros(program ast.Node, env *object.Environment) (ast.Node, error) {
 	const maxPasses = 32
 	for pass := 0; pass < maxPasses; pass++ {
-		changed := false
-		var failure error
-		result := ast.Modify(program, func(current ast.Node) ast.Node {
-			if failure != nil {
-				return current
-			}
-			call, ok := current.(*ast.CallExpression)
-			if !ok {
-				return current
-			}
-			ident, ok := call.Function.(*ast.Identifier)
-			if !ok {
-				return current
-			}
-			value, found := env.Get(ident.Value)
-			if !found {
-				return current
-			}
-			macro, ok := value.(*object.Macro)
-			if !ok {
-				return current
-			}
-			if len(call.Arguments) != len(macro.Parameters) {
-				failure = fmt.Errorf("macro %s expects %d arguments, got %d", ident.Value, len(macro.Parameters), len(call.Arguments))
-				return current
-			}
-			local := object.NewEnclosedEnvironment(macro.Env)
-			for i, parameter := range macro.Parameters {
-				local.Set(parameter.Value, &object.Quote{Node: call.Arguments[i]})
-			}
-			evaluated := Eval(macro.Body, local)
-			if wrapped, ok := evaluated.(*object.ReturnValue); ok {
-				evaluated = wrapped.Value
-			}
-			if errObj, ok := evaluated.(*object.Error); ok {
-				failure = fmt.Errorf("macro %s: %s", ident.Value, errObj.Message)
-				return current
-			}
-			quoted, ok := evaluated.(*object.Quote)
-			if !ok {
-				failure = fmt.Errorf("macro %s must return quote(...)", ident.Value)
-				return current
-			}
-			if _, ok := quoted.Node.(ast.Expression); !ok {
-				failure = fmt.Errorf("macro %s returned a non-expression AST node", ident.Value)
-				return current
-			}
-			changed = true
-			return quoted.Node
-		})
+		result, changed, failure := expandMacroPass(program, env)
 		if failure != nil {
 			return nil, failure
 		}
@@ -94,4 +45,63 @@ func ExpandMacros(program ast.Node, env *object.Environment) (ast.Node, error) {
 		}
 	}
 	return nil, fmt.Errorf("macro expansion exceeded %d passes", maxPasses)
+}
+
+func expandMacroPass(program ast.Node, env *object.Environment) (ast.Node, bool, error) {
+	changed := false
+	var failure error
+	result := ast.Modify(program, func(current ast.Node) ast.Node {
+		if failure != nil {
+			return current
+		}
+		call, ok := current.(*ast.CallExpression)
+		if !ok {
+			return current
+		}
+		name, macro := lookupMacro(call, env)
+		if macro == nil {
+			return current
+		}
+		replacement, err := expandMacroCall(name, call, macro)
+		if err != nil {
+			failure = err
+			return current
+		}
+		changed = true
+		return replacement
+	})
+	return result, changed, failure
+}
+
+func lookupMacro(call *ast.CallExpression, env *object.Environment) (string, *object.Macro) {
+	identifier, ok := call.Function.(*ast.Identifier)
+	if !ok {
+		return "", nil
+	}
+	value, _ := env.Get(identifier.Value)
+	macro, _ := value.(*object.Macro)
+	return identifier.Value, macro
+}
+
+func expandMacroCall(name string, call *ast.CallExpression, macro *object.Macro) (ast.Expression, error) {
+	if len(call.Arguments) != len(macro.Parameters) {
+		return nil, fmt.Errorf("macro %s expects %d arguments, got %d", name, len(macro.Parameters), len(call.Arguments))
+	}
+	local := object.NewEnclosedEnvironment(macro.Env)
+	for i, parameter := range macro.Parameters {
+		local.Set(parameter.Value, &object.Quote{Node: call.Arguments[i]})
+	}
+	evaluated := unwrapReturnValue(Eval(macro.Body, local))
+	if errObj, ok := evaluated.(*object.Error); ok {
+		return nil, fmt.Errorf("macro %s: %s", name, errObj.Message)
+	}
+	quoted, ok := evaluated.(*object.Quote)
+	if !ok {
+		return nil, fmt.Errorf("macro %s must return quote(...)", name)
+	}
+	expression, ok := quoted.Node.(ast.Expression)
+	if !ok {
+		return nil, fmt.Errorf("macro %s returned a non-expression AST node", name)
+	}
+	return expression, nil
 }

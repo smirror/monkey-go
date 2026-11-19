@@ -7,11 +7,27 @@ import (
 )
 
 func TestMacroLiteralParsing(t *testing.T) {
-	p := New(lexer.New(`let identity = macro(x) { quote(unquote(x)); };`))
-	program := p.ParseProgram()
-	if errs := p.Errors(); len(errs) != 0 {
-		t.Fatalf("parser errors: %v", errs)
+	literal := parseMacroDeclaration(t, `let identity = macro(x) { quote(unquote(x)); };`)
+	if literal.TokenLiteral() != "macro" {
+		t.Fatalf("macro token = %q, want macro", literal.TokenLiteral())
 	}
+	if len(literal.Parameters) != 1 {
+		t.Fatalf("parameter count = %d, want 1", len(literal.Parameters))
+	}
+	testIdentifier(t, literal.Parameters[0], "x")
+	if literal.Body == nil || len(literal.Body.Statements) != 1 {
+		t.Fatalf("unexpected macro body: %+v", literal.Body)
+	}
+	if got := literal.Body.String(); got != "quote(unquote(x))" {
+		t.Fatalf("macro body = %q, want quote(unquote(x))", got)
+	}
+}
+
+func parseMacroDeclaration(t *testing.T, input string) *ast.MacroLiteral {
+	t.Helper()
+	p := New(lexer.New(input))
+	program := p.ParseProgram()
+	checkParserErrors(t, p)
 	if len(program.Statements) != 1 {
 		t.Fatalf("statement count = %d, want 1", len(program.Statements))
 	}
@@ -23,10 +39,86 @@ func TestMacroLiteralParsing(t *testing.T) {
 	if !ok {
 		t.Fatalf("expected macro literal, got %T", declaration.Value)
 	}
-	if len(literal.Parameters) != 1 || literal.Parameters[0].Value != "x" {
-		t.Fatalf("unexpected macro parameters: %v", literal.Parameters)
+	return literal
+}
+
+func TestMacroParameterParsing(t *testing.T) {
+	tests := []struct {
+		input      string
+		parameters []string
+	}{
+		{`let identity = macro() {};`, nil},
+		{`let identity = macro(x, y, z) {};`, []string{"x", "y", "z"}},
 	}
-	if literal.Body == nil || len(literal.Body.Statements) != 1 {
-		t.Fatalf("unexpected macro body: %+v", literal.Body)
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			literal := parseMacroDeclaration(t, tt.input)
+			if len(literal.Parameters) != len(tt.parameters) {
+				t.Fatalf("parameter count = %d, want %d", len(literal.Parameters), len(tt.parameters))
+			}
+			for i, parameter := range tt.parameters {
+				testIdentifier(t, literal.Parameters[i], parameter)
+			}
+			if len(literal.Body.Statements) != 0 {
+				t.Fatalf("expected an empty macro body, got %s", literal.Body.String())
+			}
+		})
+	}
+}
+
+func TestCallableLiteralSyntaxErrors(t *testing.T) {
+	tests := []struct {
+		suffix string
+		want   string
+	}{
+		{" x { x }", "expected next token to be (, got IDENT instead."},
+		{"(x { x }", "expected next token to be ), got { instead."},
+		{"(x) x", "expected next token to be {, got IDENT instead."},
+	}
+	for _, keyword := range []string{"fn", "macro"} {
+		for _, tt := range tests {
+			t.Run(keyword+tt.suffix, func(t *testing.T) {
+				p := New(lexer.New(keyword + tt.suffix))
+				p.ParseProgram()
+				if len(p.Errors()) == 0 {
+					t.Fatal("expected a parser error")
+				}
+				if got := p.Errors()[0]; got != tt.want {
+					t.Fatalf("first error = %q, want %q", got, tt.want)
+				}
+			})
+		}
+	}
+}
+
+func TestCallArgumentLists(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"f();", "f()"},
+		{"f(g(1), [2, 3]);", "f(g(1), [2, 3])"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			p := New(lexer.New(tt.input))
+			program := p.ParseProgram()
+			checkParserErrors(t, p)
+			if got := program.String(); got != tt.want {
+				t.Fatalf("call AST = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestCallArgumentListRequiresClosingParenthesis(t *testing.T) {
+	p := New(lexer.New("f(1;"))
+	p.ParseProgram()
+	if len(p.Errors()) == 0 {
+		t.Fatal("expected a parser error")
+	}
+	want := "expected next token to be ), got ; instead."
+	if got := p.Errors()[0]; got != want {
+		t.Fatalf("first error = %q, want %q", got, want)
 	}
 }
