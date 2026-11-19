@@ -11,9 +11,9 @@ func TestForInNodeString(t *testing.T) {
 		input string
 		want  string
 	}{
-		{"for (x in range(2, 5)) { x }", "for (x in range(2, 5)) {x}"},
-		{"for (value in [1, 2]) {}", "for (value in [1, 2]) {}"},
-		{"for (value in items) { print(value); }", "for (value in items) {print(value)}"},
+		{"for x in range(2, 5) { x }", "for x in range(2, 5) {x}"},
+		{"for value in [1, 2] {}", "for value in [1, 2] {}"},
+		{"for value in items { print(value); }", "for value in items {print(value)}"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {

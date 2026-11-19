@@ -215,23 +215,23 @@ func TestInvalidLogicalOperators(t *testing.T) {
 }
 
 func TestForInTokens(t *testing.T) {
-	input := `for (i in range(2, 10)) { print(i); }
-for (value in [1, 2]) { print(value) }`
+	input := `for i in range(2, 10) { print(i); }
+for value in [1, 2] { print(value) }`
 	tests := []token.Token{
-		{Type: token.FOR, Literal: "for"}, {Type: token.LPAREN, Literal: "("},
+		{Type: token.FOR, Literal: "for"},
 		{Type: token.IDENT, Literal: "i"}, {Type: token.IN, Literal: "in"},
 		{Type: token.IDENT, Literal: "range"}, {Type: token.LPAREN, Literal: "("},
 		{Type: token.INT, Literal: "2"}, {Type: token.COMMA, Literal: ","},
 		{Type: token.INT, Literal: "10"}, {Type: token.RPAREN, Literal: ")"},
-		{Type: token.RPAREN, Literal: ")"}, {Type: token.LBRACE, Literal: "{"},
+		{Type: token.LBRACE, Literal: "{"},
 		{Type: token.IDENT, Literal: "print"}, {Type: token.LPAREN, Literal: "("},
 		{Type: token.IDENT, Literal: "i"}, {Type: token.RPAREN, Literal: ")"},
 		{Type: token.SEMICOLON, Literal: ";"}, {Type: token.RBRACE, Literal: "}"},
-		{Type: token.FOR, Literal: "for"}, {Type: token.LPAREN, Literal: "("},
+		{Type: token.FOR, Literal: "for"},
 		{Type: token.IDENT, Literal: "value"}, {Type: token.IN, Literal: "in"},
 		{Type: token.LBRACKET, Literal: "["}, {Type: token.INT, Literal: "1"},
 		{Type: token.COMMA, Literal: ","}, {Type: token.INT, Literal: "2"},
-		{Type: token.RBRACKET, Literal: "]"}, {Type: token.RPAREN, Literal: ")"},
+		{Type: token.RBRACKET, Literal: "]"},
 		{Type: token.LBRACE, Literal: "{"}, {Type: token.IDENT, Literal: "print"},
 		{Type: token.LPAREN, Literal: "("}, {Type: token.IDENT, Literal: "value"},
 		{Type: token.RPAREN, Literal: ")"}, {Type: token.RBRACE, Literal: "}"},
@@ -247,14 +247,14 @@ for (value in [1, 2]) { print(value) }`
 }
 
 func TestLineCommentsWithForLoops(t *testing.T) {
-	input := "for (i in range(2, 4)) { print(i); } // output: 2, 3\n10 / 2; // division is unaffected"
+	input := "for i in range(2, 4) { print(i); } // output: 2, 3\n10 / 2; // division is unaffected"
 	want := []token.Token{
-		{Type: token.FOR, Literal: "for"}, {Type: token.LPAREN, Literal: "("},
+		{Type: token.FOR, Literal: "for"},
 		{Type: token.IDENT, Literal: "i"}, {Type: token.IN, Literal: "in"},
 		{Type: token.IDENT, Literal: "range"}, {Type: token.LPAREN, Literal: "("},
 		{Type: token.INT, Literal: "2"}, {Type: token.COMMA, Literal: ","},
 		{Type: token.INT, Literal: "4"}, {Type: token.RPAREN, Literal: ")"},
-		{Type: token.RPAREN, Literal: ")"}, {Type: token.LBRACE, Literal: "{"},
+		{Type: token.LBRACE, Literal: "{"},
 		{Type: token.IDENT, Literal: "print"}, {Type: token.LPAREN, Literal: "("},
 		{Type: token.IDENT, Literal: "i"}, {Type: token.RPAREN, Literal: ")"},
 		{Type: token.SEMICOLON, Literal: ";"}, {Type: token.RBRACE, Literal: "}"},

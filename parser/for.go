@@ -5,12 +5,9 @@ import (
 	"monkey-go/token"
 )
 
-// The only for syntax is: for (identifier in iterable) { ... }.
+// The only for syntax is: for identifier in iterable { ... }.
 func (p *Parser) parseForStatement() ast.Statement {
 	forToken := p.curToken
-	if !p.expectPeek(token.LPAREN) {
-		return nil
-	}
 	if !p.expectPeek(token.IDENT) {
 		return nil
 	}
@@ -26,9 +23,6 @@ func (p *Parser) parseForInStatement(forToken token.Token) ast.Statement {
 
 	iterable := p.parseExpression(LOWEST)
 	if iterable == nil {
-		return nil
-	}
-	if !p.expectPeek(token.RPAREN) {
 		return nil
 	}
 	if !p.expectPeek(token.LBRACE) {

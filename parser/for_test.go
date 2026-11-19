@@ -22,11 +22,11 @@ func TestForInParsing(t *testing.T) {
 		variable    string
 		iterableAST string
 	}{
-		{"for (i in range(2, 10)) { print(i); }", "i", "range(2, 10)"},
-		{"for (i in range(10)) { print(i) }", "i", "range(10)"},
-		{"for (item in [10, 20, 30]) { print(item) }", "item", "[10, 20, 30]"},
-		{"for (item in values) { print(item) }", "item", "values"},
-		{"for (i in getItems(2)) { i }", "i", "getItems(2)"},
+		{"for i in range(2, 10) { print(i); }", "i", "range(2, 10)"},
+		{"for i in range(10) { print(i) }", "i", "range(10)"},
+		{"for item in [10, 20, 30] { print(item) }", "item", "[10, 20, 30]"},
+		{"for item in values { print(item) }", "item", "values"},
+		{"for i in getItems(2) { i }", "i", "getItems(2)"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {
@@ -49,7 +49,7 @@ func TestForInParsing(t *testing.T) {
 }
 
 func TestNestedForParsing(t *testing.T) {
-	program := parseForTest(t, "for (i in range(2)) { for (j in range(3)) { print(i + j) } }")
+	program := parseForTest(t, "for i in range(2) { for j in range(3) { print(i + j) } }")
 	outer, ok := program.Statements[0].(*ast.ForInStatement)
 	if !ok {
 		t.Fatalf("outer statement is %T", program.Statements[0])
@@ -65,7 +65,10 @@ func TestInvalidForSyntax(t *testing.T) {
 		"for (i = 0; i < 10; i = i + 1) { i }",
 		"for (let i in range(3)) { i }",
 		"for (i in ) { i }",
-		"for (i in range(3)) print(i)",
+		"for i in range(3) print(i)",
+		"for (i in range(3)) { i }",
+		"for (i in [1, 2]) { i }",
+		"for i in ) { i }",
 		"for (i = 0; i < 3; i = i + 1) { i }",
 	}
 	for _, input := range tests {

@@ -209,7 +209,7 @@ func (fs *ForInStatement) statementNode()       {}
 func (fs *ForInStatement) TokenLiteral() string { return fs.Token.Literal }
 func (fs *ForInStatement) String() string {
 	var out bytes.Buffer
-	out.WriteString("for (")
+	out.WriteString("for ")
 	if fs.Variable != nil {
 		out.WriteString(fs.Variable.String())
 	}
@@ -217,7 +217,7 @@ func (fs *ForInStatement) String() string {
 	if fs.Iterable != nil {
 		out.WriteString(fs.Iterable.String())
 	}
-	out.WriteString(") {")
+	out.WriteString(" {")
 	if fs.Body != nil {
 		out.WriteString(fs.Body.String())
 	}

@@ -101,17 +101,17 @@ if (x > 5) {
 
 ### For Loops
 
-Monkey supports one form of for loop: `for (name in iterable) { ... }`.
+Monkey supports one form of for loop: `for name in iterable { ... }`.
 The body must be enclosed in `{}`. The iterable can be a range, an array,
 or an expression that evaluates to one of them.
 
 ```monkey
-for (i in range(2, 10)) {
+for i in range(2, 10) {
     print(i);
 }
 // prints 2, 3, ... 9
 
-for (value in [10, 20, 30]) {
+for value in [10, 20, 30] {
     print(value);
 }
 ```
