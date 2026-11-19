@@ -40,6 +40,8 @@ func TestTokenTypeUniqueness(t *testing.T) {
 		{"IF", IF},
 		{"ELSE", ELSE},
 		{"RETURN", RETURN},
+		{"FOR", FOR},
+		{"IN", IN},
 	}
 
 	seen := make(map[TokenType]string)

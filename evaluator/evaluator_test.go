@@ -968,3 +968,53 @@ func TestLogicalOperatorAssignmentPrecedence(t *testing.T) {
 		})
 	}
 }
+
+func TestRangeBuiltin(t *testing.T) {
+	tests := []struct {
+		input string
+		start int64
+		stop  int64
+		step  int64
+	}{
+		{"range(5)", 0, 5, 1},
+		{"range(2, 10)", 2, 10, 1},
+		{"range(10, 2, -2)", 10, 2, -2},
+		{"range(1, 10, 3)", 1, 10, 3},
+		{"range(-3, 2)", -3, 2, 1},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := testEval(tt.input)
+			rng, ok := got.(*object.Range)
+			if !ok {
+				t.Fatalf("expected Range, got %T (%+v)", got, got)
+			}
+			want := object.Range{Start: tt.start, Stop: tt.stop, Step: tt.step}
+			if *rng != want {
+				t.Fatalf("range got %+v, want %+v", rng, want)
+			}
+		})
+	}
+}
+
+func TestRangeBuiltinErrors(t *testing.T) {
+	tests := []struct {
+		input string
+		want  string
+	}{
+		{"range()", "wrong number of arguments to `range`. got=0, want=1..3"},
+		{"range(1, 2, 3, 4)", "wrong number of arguments to `range`. got=4, want=1..3"},
+		{"range(true)", "argument 1 to `range` must be INTEGER, got BOOLEAN"},
+		{"range(1, false)", "argument 2 to `range` must be INTEGER, got BOOLEAN"},
+		{"range(1, 10, 0)", "range step cannot be zero"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			got := testEval(tt.input)
+			err, ok := got.(*object.Error)
+			if !ok || err.Message != tt.want {
+				t.Fatalf("expected error %q, got %T (%+v)", tt.want, got, got)
+			}
+		})
+	}
+}

@@ -163,6 +163,7 @@ func (oe *InfixExpression) String() string {
 	return out.String()
 }
 
+
 type Boolean struct {
 	Token token.Token
 	Value bool
@@ -193,6 +194,34 @@ func (ie *IfExpression) String() string {
 		out.WriteString(ie.Alternative.String())
 	}
 
+	return out.String()
+}
+
+
+type ForInStatement struct {
+	Token    token.Token // for
+	Variable *Identifier
+	Iterable Expression
+	Body     *BlockStatement
+}
+
+func (fs *ForInStatement) statementNode()       {}
+func (fs *ForInStatement) TokenLiteral() string { return fs.Token.Literal }
+func (fs *ForInStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString("for ")
+	if fs.Variable != nil {
+		out.WriteString(fs.Variable.String())
+	}
+	out.WriteString(" in ")
+	if fs.Iterable != nil {
+		out.WriteString(fs.Iterable.String())
+	}
+	out.WriteString(" {")
+	if fs.Body != nil {
+		out.WriteString(fs.Body.String())
+	}
+	out.WriteString("}")
 	return out.String()
 }
 

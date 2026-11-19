@@ -1,0 +1,83 @@
+package parser
+
+import (
+	"monkey-go/ast"
+	"monkey-go/lexer"
+	"testing"
+)
+
+func parseForTest(t *testing.T, input string) *ast.Program {
+	t.Helper()
+	p := New(lexer.New(input))
+	program := p.ParseProgram()
+	if errs := p.Errors(); len(errs) > 0 {
+		t.Fatalf("parser errors: %v", errs)
+	}
+	return program
+}
+
+func TestForInParsing(t *testing.T) {
+	tests := []struct {
+		input       string
+		variable    string
+		iterableAST string
+	}{
+		{"for i in range(2, 10) { print(i); }", "i", "range(2, 10)"},
+		{"for i in range(10) { print(i) }", "i", "range(10)"},
+		{"for item in [10, 20, 30] { print(item) }", "item", "[10, 20, 30]"},
+		{"for item in values { print(item) }", "item", "values"},
+		{"for i in getItems(2) { i }", "i", "getItems(2)"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			program := parseForTest(t, tt.input)
+			if len(program.Statements) != 1 {
+				t.Fatalf("got %d statements, want 1", len(program.Statements))
+			}
+			stmt, ok := program.Statements[0].(*ast.ForInStatement)
+			if !ok {
+				t.Fatalf("got %T, want *ast.ForInStatement", program.Statements[0])
+			}
+			if stmt.Variable.Value != tt.variable || stmt.Iterable.String() != tt.iterableAST {
+				t.Fatalf("variable=%q iterable=%q", stmt.Variable.Value, stmt.Iterable.String())
+			}
+			if len(stmt.Body.Statements) != 1 {
+				t.Fatalf("body statement count = %d", len(stmt.Body.Statements))
+			}
+		})
+	}
+}
+
+func TestNestedForParsing(t *testing.T) {
+	program := parseForTest(t, "for i in range(2) { for j in range(3) { print(i + j) } }")
+	outer, ok := program.Statements[0].(*ast.ForInStatement)
+	if !ok {
+		t.Fatalf("outer statement is %T", program.Statements[0])
+	}
+	if _, ok := outer.Body.Statements[0].(*ast.ForInStatement); !ok {
+		t.Fatalf("inner statement is %T", outer.Body.Statements[0])
+	}
+}
+
+func TestInvalidForSyntax(t *testing.T) {
+	tests := []string{
+		"for (i = 0, i < 10, i++) { i }",
+		"for (i = 0; i < 10; i = i + 1) { i }",
+		"for (let i in range(3)) { i }",
+		"for (i in ) { i }",
+		"for i in range(3) print(i)",
+		"for (i in range(3)) { i }",
+		"for (i in [1, 2]) { i }",
+		"for i in ) { i }",
+		"for (i = 0; i < 3; i = i + 1) { i }",
+	}
+	for _, input := range tests {
+		t.Run(input, func(t *testing.T) {
+			p := New(lexer.New(input))
+			_ = p.ParseProgram()
+			if len(p.Errors()) == 0 {
+				t.Fatalf("expected parser error for %q", input)
+			}
+		})
+	}
+}

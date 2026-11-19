@@ -2,7 +2,6 @@ package repl
 
 import (
 	"bufio"
-	"fmt"
 	"io"
 	"monkey-go/evaluator"
 	"monkey-go/lexer"
@@ -13,41 +12,39 @@ import (
 
 const PROMPT = ">> "
 
+const CONTINUATION_PROMPT = ".. "
+
 func Start(in io.Reader, out io.Writer) {
 	scanner := bufio.NewScanner(in)
 	env := object.NewEnvironment()
-
+	var input strings.Builder
 	for {
-		fmt.Fprintf(out, PROMPT) // nolint
-		scanned := scanner.Scan()
-		if !scanned {
+		source, done := nextREPLSource(scanner, out, &input)
+		if done {
 			return
 		}
-
-		line := scanner.Text()
-		// exit the REPL
-		if strings.ToLower(line) == "exit" {
-			break
-		}
-
-		l := lexer.New(line)
-		p := parser.New(l)
-
-		program := p.ParseProgram()
-		if len(p.Errors()) != 0 {
-			printParserErrors(out, p.Errors())
+		if source == "" {
 			continue
 		}
-
-		evaluated := evaluator.Eval(program, env)
-		if evaluated != nil {
-			_, err := io.WriteString(out, evaluated.Inspect()+"\n")
-			if err != nil {
-				return
-			}
+		if !evaluateREPLSource(source, env, out) {
+			return
 		}
-
 	}
+}
+
+func evaluateREPLSource(source string, env *object.Environment, out io.Writer) bool {
+	p := parser.New(lexer.New(source))
+	program := p.ParseProgram()
+	if len(p.Errors()) != 0 {
+		printParserErrors(out, p.Errors())
+		return true
+	}
+	value := evaluator.Eval(program, env)
+	if value == nil {
+		return true
+	}
+	_, err := io.WriteString(out, value.Inspect()+"\n")
+	return err == nil
 }
 
 const MONKEY_FACE = `            __,__

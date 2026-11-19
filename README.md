@@ -27,7 +27,8 @@ Feel free to type in commands
 >>
 ```
 
-Type `exit` to quit.
+Type `exit` to quit. Multi-line `for`, `if`, and function bodies are supported;
+the REPL uses a `.. ` continuation prompt until the delimiters close.
 
 ### Run tests
 
@@ -98,6 +99,36 @@ if (x > 5) {
 
 `if` is an expression and returns a value.
 
+### For Loops
+
+Monkey supports one form of for loop: `for name in iterable { ... }`.
+The body must be enclosed in `{}`. The iterable can be a range, an array,
+or an expression that evaluates to one of them.
+
+```monkey
+for i in range(2, 10) {
+    print(i);
+}
+// prints 2, 3, ... 9
+
+for value in [10, 20, 30] {
+    print(value);
+}
+```
+
+`range(end)`, `range(start, end)`, and `range(start, end, step)` take
+integer arguments. The stop value is exclusive; the default step is 1,
+and step cannot be zero. Negative steps iterate downward. Ranges are
+lazy and do not allocate an array.
+
+The loop variable belongs to a loop-local scope, so an outer variable
+with the same name is not overwritten. Assignments to other variables
+in outer scopes still work. A loop produces `null`; `return` and
+errors propagate immediately. C-style three-clause `for`, `++`,
+`break`, `continue`, and `while` are not supported.
+
+Single-line `//` comments are supported; `/* ... */` comments are not.
+
 ### Functions
 
 ```monkey
@@ -158,6 +189,7 @@ h[true]   // "yes"
 | `rest(arr)` | New array without the first element |
 | `push(arr, val)` | New array with val appended |
 | `print(...)` | Print values to stdout |
+| `range(...)` | Lazy numeric range: `range(end)`, `range(start, end)`, or `range(start, end, step)` |
 
 ```monkey
 let arr = [1, 2, 3];
@@ -175,18 +207,20 @@ print("Hello!", 42, true)
 
 ## Feature
 - [x] Unicode support
-- [ ] for-loops
+- [x] for-in loops
 - [x] logical operators
 
 ## Roadmap
 
 ### High Priority
-- [ ] Comments (`//`, `/* */`)
+- [x] Single-line comments (`//`)
+- [ ] Block comments (`/* */`)
 - [ ] Float type
 - [x] Logical operators (`&&`, `||`)
 - [ ] Comparison operators (`<=`, `>=`)
 - [ ] Modulo operator (`%`)
-- [ ] for / while loops + break / continue
+- [x] `for-in` loops
+- [ ] `while` loops + `break` / `continue`
 - [x] Variable reassignment (`x = 10`)
 - [ ] `type()` function
 
