@@ -61,6 +61,11 @@ a == b // false
 a != b // true
 ```
 
+Integer arithmetic uses signed 64-bit values. Division by zero and overflow
+(in addition, subtraction, multiplication, division, or unary minus) return
+a Monkey runtime error rather than panicking or silently wrapping. Division
+truncates toward zero.
+
 ### Booleans
 
 ```monkey
@@ -140,6 +145,9 @@ add(3, 4)  // 7
 ```
 
 Functions are first-class values. The last evaluated expression is the return value.
+Function calls require exactly the declared number of arguments; otherwise
+they return a Monkey runtime error. An empty function body returns `null`.
+
 
 ```monkey
 let factorial = fn(n) {

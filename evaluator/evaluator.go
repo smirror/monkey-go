@@ -81,6 +81,9 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	switch fn := fn.(type) {
 
 	case *object.Function:
+		if len(args) != len(fn.Parameters) {
+			return newError("wrong number of arguments. got=%d, want=%d", len(args), len(fn.Parameters))
+		}
 		extendedEnv := extendFunctionEnv(fn, args)
 		evaluated := Eval(fn.Body, extendedEnv)
 		return unwrapReturnValue(evaluated)
@@ -165,6 +168,9 @@ func evalBlockStatement(block *ast.BlockStatement, env *object.Environment) obje
 		}
 	}
 
+	if result == nil {
+		return NULL
+	}
 	return result
 }
 
@@ -184,8 +190,7 @@ func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 		return newError("unknown operator: -%s", right.Type())
 	}
 
-	value := right.(*object.Integer).Value
-	return &object.Integer{Value: -value}
+	return evalIntegerNegate(right.(*object.Integer).Value)
 }
 
 func evalInfixExpression(operator string, left, right object.Object) object.Object {
@@ -211,13 +216,13 @@ func evalIntegerInfixExpression(operator string, left, right object.Object) obje
 
 	switch operator {
 	case "+":
-		return &object.Integer{Value: leftVal + rightVal}
+		return evalIntegerAdd(leftVal, rightVal)
 	case "-":
-		return &object.Integer{Value: leftVal - rightVal}
+		return evalIntegerSubtract(leftVal, rightVal)
 	case "*":
-		return &object.Integer{Value: leftVal * rightVal}
+		return evalIntegerMultiply(leftVal, rightVal)
 	case "/":
-		return &object.Integer{Value: leftVal / rightVal}
+		return evalIntegerDivide(leftVal, rightVal)
 	case "<":
 		return nativeBoolToBooleanObject(leftVal < rightVal)
 	case ">":
