@@ -62,6 +62,12 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 		return &object.Function{Parameters: params, Env: env, Body: body}
 
 	case *ast.CallExpression:
+		if ident, ok := node.Function.(*ast.Identifier); ok && ident.Value == "quote" {
+			if len(node.Arguments) != 1 {
+				return newError("quote expects 1 argument, got %d", len(node.Arguments))
+			}
+			return quote(node.Arguments[0], env)
+		}
 		return evalCallExpression(node, env)
 
 	case *ast.ArrayLiteral:
