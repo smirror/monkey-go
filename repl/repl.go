@@ -27,18 +27,13 @@ func Start(in io.Reader, out io.Writer) {
 		if source == "" {
 			continue
 		}
-		if !evaluateREPLSourceWithMacros(source, env, macroEnv, out) {
+		if !evaluateREPLSource(source, env, macroEnv, out) {
 			return
 		}
 	}
 }
 
-// The original helper remains for existing tests and standalone callers.
-func evaluateREPLSource(source string, env *object.Environment, out io.Writer) bool {
-	return evaluateREPLSourceWithMacros(source, env, object.NewEnvironment(), out)
-}
-
-func evaluateREPLSourceWithMacros(source string, env, macroEnv *object.Environment, out io.Writer) bool {
+func evaluateREPLSource(source string, env, macroEnv *object.Environment, out io.Writer) bool {
 	p := parser.New(lexer.New(source))
 	program := p.ParseProgram()
 	if len(p.Errors()) != 0 {
