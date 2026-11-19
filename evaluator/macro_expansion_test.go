@@ -90,7 +90,7 @@ twice(inc(3));`
 }
 
 func TestMacroErrors(t *testing.T) {
-	cases := []struct{
+	cases := []struct {
 		source string
 		want   string
 	}{
