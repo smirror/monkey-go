@@ -12,24 +12,30 @@ func integerOverflow(operator string, left, right int64) object.Object {
 }
 
 func evalIntegerAdd(left, right int64) object.Object {
-	if (right > 0 && left > math.MaxInt64-right) ||
-		(right < 0 && left < math.MinInt64-right) {
+	if right > 0 && left > math.MaxInt64-right {
+		return integerOverflow("+", left, right)
+	}
+	if right < 0 && left < math.MinInt64-right {
 		return integerOverflow("+", left, right)
 	}
 	return &object.Integer{Value: left + right}
 }
 
 func evalIntegerSubtract(left, right int64) object.Object {
-	if (right < 0 && left > math.MaxInt64+right) ||
-		(right > 0 && left < math.MinInt64+right) {
+	if right < 0 && left > math.MaxInt64+right {
+		return integerOverflow("-", left, right)
+	}
+	if right > 0 && left < math.MinInt64+right {
 		return integerOverflow("-", left, right)
 	}
 	return &object.Integer{Value: left - right}
 }
 
 func evalIntegerMultiply(left, right int64) object.Object {
-	if (left == math.MinInt64 && right == -1) ||
-		(right == math.MinInt64 && left == -1) {
+	if left == math.MinInt64 && right == -1 {
+		return integerOverflow("*", left, right)
+	}
+	if right == math.MinInt64 && left == -1 {
 		return integerOverflow("*", left, right)
 	}
 	result := left * right
