@@ -58,7 +58,7 @@ func objectToExpression(value object.Object) (ast.Expression, bool) {
 		}, true
 	case *object.Boolean:
 		literal := "false"
-		typeName := token.FALSE
+		typeName := token.TokenType(token.FALSE)
 		if value.Value {
 			literal = "true"
 			typeName = token.TRUE
