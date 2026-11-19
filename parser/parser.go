@@ -165,22 +165,25 @@ func (p *Parser) parseLetStatement() ast.Statement {
 
 	p.nextToken()
 
-	stmt.Value = p.parseExpression(LOWEST)
+	stmt.Value = p.parseStatementValue()
 	if stmt.Value == nil {
 		return nil
 	}
 
-	p.consumeOptionalSemicolon()
-
 	return stmt
 }
 
-// consumeOptionalSemicolon lets statement parsing stop at the current expression
-// when the next token starts a new statement.
-func (p *Parser) consumeOptionalSemicolon() {
+// parseStatementValue parses an expression and consumes a trailing semicolon,
+// if present, without advancing past the next statement.
+func (p *Parser) parseStatementValue() ast.Expression {
+	value := p.parseExpression(LOWEST)
+	if value == nil {
+		return nil
+	}
 	if p.peekTokenIs(token.SEMICOLON) {
 		p.nextToken()
 	}
+	return value
 }
 
 func (p *Parser) curTokenIs(t token.TokenType) bool {
@@ -206,12 +209,10 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 
 	p.nextToken()
 
-	stmt.ReturnValue = p.parseExpression(LOWEST)
+	stmt.ReturnValue = p.parseStatementValue()
 	if stmt.ReturnValue == nil {
 		return nil
 	}
-
-	p.consumeOptionalSemicolon()
 
 	return stmt
 }
@@ -219,12 +220,10 @@ func (p *Parser) parseReturnStatement() ast.Statement {
 func (p *Parser) parseExpressionStatement() ast.Statement {
 	stmt := &ast.ExpressionStatement{Token: p.curToken}
 
-	stmt.Expression = p.parseExpression(LOWEST)
+	stmt.Expression = p.parseStatementValue()
 	if stmt.Expression == nil {
 		return nil
 	}
-
-	p.consumeOptionalSemicolon()
 
 	return stmt
 }
