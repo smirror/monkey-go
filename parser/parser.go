@@ -279,19 +279,16 @@ func (p *Parser) parserIntegerLiteral() ast.Expression {
 }
 
 func (p *Parser) parsePrefixExpression() ast.Expression {
-	expression := &ast.PrefixExpression{
-		Token:    p.curToken,
-		Operator: p.curToken.Literal,
-	}
-
-	p.nextToken()
-
-	expression.Right = p.parseExpression(PREFIX)
-	if expression.Right == nil {
+	operator := p.curToken
+	right := p.parseRightOperand(PREFIX)
+	if right == nil {
 		return nil
 	}
-
-	return expression
+	return &ast.PrefixExpression{
+		Token:    operator,
+		Operator: operator.Literal,
+		Right:    right,
+	}
 }
 
 func (p *Parser) parseInfixExpression(left ast.Expression) ast.Expression {
@@ -303,19 +300,22 @@ func (p *Parser) parseAssignExpression(left ast.Expression) ast.Expression {
 }
 
 func (p *Parser) parseInfixExpressionWithPrecedence(left ast.Expression, precedence int) ast.Expression {
-	expression := &ast.InfixExpression{
-		Token:    p.curToken,
-		Operator: p.curToken.Literal,
-		Left:     left,
-	}
-
-	p.nextToken()
-	expression.Right = p.parseExpression(precedence)
-	if expression.Right == nil {
+	operator := p.curToken
+	right := p.parseRightOperand(precedence)
+	if right == nil {
 		return nil
 	}
+	return &ast.InfixExpression{
+		Token:    operator,
+		Operator: operator.Literal,
+		Left:     left,
+		Right:    right,
+	}
+}
 
-	return expression
+func (p *Parser) parseRightOperand(precedence int) ast.Expression {
+	p.nextToken()
+	return p.parseExpression(precedence)
 }
 
 func (p *Parser) peekPrecedence() int {
