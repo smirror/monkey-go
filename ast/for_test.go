@@ -6,16 +6,14 @@ import (
 	"testing"
 )
 
-func TestForNodeString(t *testing.T) {
+func TestForInNodeString(t *testing.T) {
 	tests := []struct {
 		input string
 		want  string
 	}{
-		{"for (i = 0; i < 3; i++) { i }", "for ((i = 0); (i < 3); (i++)) {i}"},
-		{"for (; true;) {}", "for (; true; ) {}"},
-		{"for (let i = 0; i < 3; i = i + 1) {}", "for (let i = 0; (i < 3); (i = (i + 1))) {}"},
 		{"for (x in range(2, 5)) { x }", "for (x in range(2, 5)) {x}"},
 		{"for (value in [1, 2]) {}", "for (value in [1, 2]) {}"},
+		{"for (value in items) { print(value); }", "for (value in items) {print(value)}"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.input, func(t *testing.T) {

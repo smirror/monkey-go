@@ -22,9 +22,6 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 	case *ast.BlockStatement:
 		return evalBlockStatement(node, env)
 
-	case *ast.ForStatement:
-		return evalForStatement(node, env)
-
 	case *ast.ForInStatement:
 		return evalForInStatement(node, env)
 
@@ -49,9 +46,6 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 	case *ast.InfixExpression:
 		return evalInfixExpressionNode(node, env)
-
-	case *ast.PostfixExpression:
-		return evalPostfixExpression(node, env)
 
 	case *ast.IfExpression:
 		return evalIfExpression(node, env)

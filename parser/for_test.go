@@ -3,7 +3,6 @@ package parser
 import (
 	"monkey-go/ast"
 	"monkey-go/lexer"
-	"strings"
 	"testing"
 )
 
@@ -49,72 +48,13 @@ func TestForInParsing(t *testing.T) {
 	}
 }
 
-type classicForCase struct {
-	input   string
-	initAST string
-	condAST string
-	postAST string
-}
-
-func TestClassicForParsing(t *testing.T) {
-	tests := []classicForCase{
-		{"for (i = 0; i < 10; i++) { print(i) }", "(i = 0)", "(i < 10)", "(i++)"},
-		{"for (let i = 0; i < 10; i = i + 1) { print(i); }", "let i = 0", "(i < 10)", "(i = (i + 1))"},
-		{"for (; i < 10; i++) { i }", "", "(i < 10)", "(i++)"},
-		{"for (i = 0; i < 10;) { i }", "(i = 0)", "(i < 10)", ""},
-		{"for (i = 0; i < 10 && active; i++) { i }", "(i = 0)", "((i < 10) && active)", "(i++)"},
-	}
-	for _, tt := range tests {
-		t.Run(tt.input, func(t *testing.T) {
-			assertClassicFor(t, tt)
-		})
-	}
-}
-
-func assertClassicFor(t *testing.T, tt classicForCase) {
-	t.Helper()
-	program := parseForTest(t, tt.input)
-	if len(program.Statements) != 1 {
-		t.Fatalf("got %d statements, want 1", len(program.Statements))
-	}
-	stmt, ok := program.Statements[0].(*ast.ForStatement)
-	if !ok {
-		t.Fatalf("got %T, want *ast.ForStatement", program.Statements[0])
-	}
-	assertClassicForClauses(t, stmt, tt)
-	if len(stmt.Body.Statements) != 1 {
-		t.Fatalf("body statements=%d, want 1", len(stmt.Body.Statements))
-	}
-}
-
-func assertClassicForClauses(t *testing.T, stmt *ast.ForStatement, tt classicForCase) {
-	t.Helper()
-	init := ""
-	if stmt.Init != nil {
-		init = strings.TrimSuffix(stmt.Init.String(), ";")
-	}
-	if init != tt.initAST {
-		t.Errorf("initializer got %q, want %q", init, tt.initAST)
-	}
-	if condition := stmt.Condition.String(); condition != tt.condAST {
-		t.Errorf("condition got %q, want %q", condition, tt.condAST)
-	}
-	post := ""
-	if stmt.Post != nil {
-		post = stmt.Post.String()
-	}
-	if post != tt.postAST {
-		t.Errorf("post got %q, want %q", post, tt.postAST)
-	}
-}
-
 func TestNestedForParsing(t *testing.T) {
-	program := parseForTest(t, "for (i in range(2)) { for (j = 0; j < 3; j++) { print(i + j) } }")
+	program := parseForTest(t, "for (i in range(2)) { for (j in range(3)) { print(i + j) } }")
 	outer, ok := program.Statements[0].(*ast.ForInStatement)
 	if !ok {
 		t.Fatalf("outer statement is %T", program.Statements[0])
 	}
-	if _, ok := outer.Body.Statements[0].(*ast.ForStatement); !ok {
+	if _, ok := outer.Body.Statements[0].(*ast.ForInStatement); !ok {
 		t.Fatalf("inner statement is %T", outer.Body.Statements[0])
 	}
 }
@@ -122,10 +62,11 @@ func TestNestedForParsing(t *testing.T) {
 func TestInvalidForSyntax(t *testing.T) {
 	tests := []string{
 		"for (i = 0, i < 10, i++) { i }",
-		"for (i = 0; ; i++) { i }",
+		"for (i = 0; i < 10; i = i + 1) { i }",
+		"for (let i in range(3)) { i }",
 		"for (i in ) { i }",
 		"for (i in range(3)) print(i)",
-		"for (i = 0; i < 3; i++ { i }",
+		"for (i = 0; i < 3; i = i + 1) { i }",
 	}
 	for _, input := range tests {
 		t.Run(input, func(t *testing.T) {

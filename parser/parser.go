@@ -21,7 +21,6 @@ const (
 	PREFIX      // -X or !X
 	CALL        // myFunction(X)
 	INDEX       // array[index]
-	POSTFIX     // i++
 )
 
 var precedencs = map[token.TokenType]int{
@@ -38,7 +37,6 @@ var precedencs = map[token.TokenType]int{
 	token.ASTERISK: PRODUCT,     // *
 	token.LPAREN:   CALL,        // (
 	token.LBRACKET: INDEX,       // [
-	token.INCREMENT: POSTFIX,    // ++
 }
 
 type (
@@ -100,7 +98,6 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerInfix(token.LPAREN, p.parseCallExpression)
 	p.registerInfix(token.LBRACKET, p.parseIndexExpression)
 	p.registerInfix(token.ASSIGN, p.parseAssignExpression)
-	p.registerInfix(token.INCREMENT, p.parsePostfixExpression)
 
 	//2つトークンに読み込む。curTokenとpeekTokenの両方がセットされる。
 	p.nextToken()

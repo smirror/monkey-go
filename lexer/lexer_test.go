@@ -214,29 +214,33 @@ func TestInvalidLogicalOperators(t *testing.T) {
 	}
 }
 
-func TestForLoopTokens(t *testing.T) {
-	input := `for (i in range(2, 10)) { i++; }
-for (i = 0; i < 10; i++) {}`
-	tests := []struct {
-		kind token.TokenType
-		text string
-	}{
-		{token.FOR, "for"}, {token.LPAREN, "("}, {token.IDENT, "i"},
-		{token.IN, "in"}, {token.IDENT, "range"}, {token.LPAREN, "("},
-		{token.INT, "2"}, {token.COMMA, ","}, {token.INT, "10"},
-		{token.RPAREN, ")"}, {token.RPAREN, ")"}, {token.LBRACE, "{"},
-		{token.IDENT, "i"}, {token.INCREMENT, "++"}, {token.SEMICOLON, ";"},
-		{token.RBRACE, "}"}, {token.FOR, "for"}, {token.LPAREN, "("},
-		{token.IDENT, "i"}, {token.ASSIGN, "="}, {token.INT, "0"},
-		{token.SEMICOLON, ";"}, {token.IDENT, "i"}, {token.LT, "<"},
-		{token.INT, "10"}, {token.SEMICOLON, ";"}, {token.IDENT, "i"},
-		{token.INCREMENT, "++"}, {token.RPAREN, ")"}, {token.LBRACE, "{"},
-		{token.RBRACE, "}"}, {token.EOF, ""},
+func TestForInTokens(t *testing.T) {
+	input := `for (i in range(2, 10)) { print(i); }
+for (value in [1, 2]) { print(value) }`
+	tests := []token.Token{
+		{Type: token.FOR, Literal: "for"}, {Type: token.LPAREN, Literal: "("},
+		{Type: token.IDENT, Literal: "i"}, {Type: token.IN, Literal: "in"},
+		{Type: token.IDENT, Literal: "range"}, {Type: token.LPAREN, Literal: "("},
+		{Type: token.INT, Literal: "2"}, {Type: token.COMMA, Literal: ","},
+		{Type: token.INT, Literal: "10"}, {Type: token.RPAREN, Literal: ")"},
+		{Type: token.RPAREN, Literal: ")"}, {Type: token.LBRACE, Literal: "{"},
+		{Type: token.IDENT, Literal: "print"}, {Type: token.LPAREN, Literal: "("},
+		{Type: token.IDENT, Literal: "i"}, {Type: token.RPAREN, Literal: ")"},
+		{Type: token.SEMICOLON, Literal: ";"}, {Type: token.RBRACE, Literal: "}"},
+		{Type: token.FOR, Literal: "for"}, {Type: token.LPAREN, Literal: "("},
+		{Type: token.IDENT, Literal: "value"}, {Type: token.IN, Literal: "in"},
+		{Type: token.LBRACKET, Literal: "["}, {Type: token.INT, Literal: "1"},
+		{Type: token.COMMA, Literal: ","}, {Type: token.INT, Literal: "2"},
+		{Type: token.RBRACKET, Literal: "]"}, {Type: token.RPAREN, Literal: ")"},
+		{Type: token.LBRACE, Literal: "{"}, {Type: token.IDENT, Literal: "print"},
+		{Type: token.LPAREN, Literal: "("}, {Type: token.IDENT, Literal: "value"},
+		{Type: token.RPAREN, Literal: ")"}, {Type: token.RBRACE, Literal: "}"},
+		{Type: token.EOF, Literal: ""},
 	}
 	l := New(input)
 	for i, want := range tests {
 		got := l.NextToken()
-		if got.Type != want.kind || got.Literal != want.text {
+		if got != want {
 			t.Fatalf("token[%d]: got=%+v, want=%+v", i, got, want)
 		}
 	}

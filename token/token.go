@@ -19,7 +19,6 @@ const (
 	// 演算子
 	ASSIGN   = "="
 	PLUS     = "+"
-	INCREMENT = "++"
 	MINUS    = "-"
 	BANG     = "!"
 	ASTERISK = "*"

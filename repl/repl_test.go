@@ -6,8 +6,8 @@ import (
 	"testing"
 )
 
-func TestMultilineClassicForInREPL(t *testing.T) {
-	input := "let total = 0;\nfor (i = 0; i < 4; i++) {\n  total = total + i;\n}\ntotal;\nexit\n"
+func TestMultilineArrayForInREPL(t *testing.T) {
+	input := "let total = 0;\nfor (i in [1, 2, 3]) {\n  total = total + i;\n}\ntotal;\nexit\n"
 	var out bytes.Buffer
 	Start(strings.NewReader(input), &out)
 	if got := out.String(); !strings.Contains(got, "6\n") {

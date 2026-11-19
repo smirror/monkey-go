@@ -101,9 +101,9 @@ if (x > 5) {
 
 ### For Loops
 
-Two for-loop forms are supported. In both forms, the body must be enclosed in `{}`.
-
-**Iteration over a range or array:**
+Monkey supports one form of for loop: `for (name in iterable) { ... }`.
+The body must be enclosed in `{}`. The iterable can be a range, an array,
+or an expression that evaluates to one of them.
 
 ```monkey
 for (i in range(2, 10)) {
@@ -116,32 +116,16 @@ for (value in [10, 20, 30]) {
 }
 ```
 
-`range(end)`, `range(start, end)`, and `range(start, end, step)` accept
-integer arguments. The end value is exclusive, the default step is 1,
-and the step must not be zero. Negative steps iterate downward.
-`range` is lazy and does not allocate a list of numbers. Arrays and
-array-valued expressions can also be used after `in`.
+`range(end)`, `range(start, end)`, and `range(start, end, step)` take
+integer arguments. The stop value is exclusive; the default step is 1,
+and step cannot be zero. Negative steps iterate downward. Ranges are
+lazy and do not allocate an array.
 
-**Condition-controlled (semicolon-separated):**
-
-```monkey
-for (i = 0; i < 10; i++) {
-    print(i);
-}
-// prints 0, 1, ... 9
-```
-
-The header uses `;` between initialization, condition, and update.
-The condition is required; initialization and update may be omitted.
-`let i = 0` can also be used as the initializer. `i++` increments an
-integer variable by one, and its expression value is the old value.
-
-Both forms create a loop-local scope. In `for (i = 0; ...)`, `i` is
-initialized locally even without `let`; an outer variable with the
-same name is not overwritten. Assignments to other existing variables
-still update their enclosing scope. A loop produces `null`, and
-`return` and errors propagate immediately. `break`, `continue`, and
-`while` are not implemented yet.
+The loop variable belongs to a loop-local scope, so an outer variable
+with the same name is not overwritten. Assignments to other variables
+in outer scopes still work. A loop produces `null`; `return` and
+errors propagate immediately. C-style three-clause `for`, `++`,
+`break`, `continue`, and `while` are not supported.
 
 Single-line `//` comments are supported; `/* ... */` comments are not.
 
@@ -223,7 +207,7 @@ print("Hello!", 42, true)
 
 ## Feature
 - [x] Unicode support
-- [x] for-loops (`for-in` / semicolon-separated classic `for`)
+- [x] for-in loops
 - [x] logical operators
 
 ## Roadmap
@@ -235,7 +219,7 @@ print("Hello!", 42, true)
 - [x] Logical operators (`&&`, `||`)
 - [ ] Comparison operators (`<=`, `>=`)
 - [ ] Modulo operator (`%`)
-- [x] `for-in` and classic `for` loops
+- [x] `for-in` loops
 - [ ] `while` loops + `break` / `continue`
 - [x] Variable reassignment (`x = 10`)
 - [ ] `type()` function
