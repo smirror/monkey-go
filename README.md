@@ -159,6 +159,23 @@ let factorial = fn(n) {
 };
 ```
 
+### Macros (experimental)
+
+`macro` definitions operate on syntax trees before evaluation; arguments are
+quoted rather than evaluated. `quote(expr)` captures source syntax, and
+`unquote(expr)` evaluates a sub-expression while building quoted syntax.
+
+```monkey
+let twice = macro(x) { quote(unquote(x) + unquote(x)); };
+twice(3 + 1)  // expands to ((3 + 1) + (3 + 1)), yielding 8
+```
+
+Macros are currently top-level declarations. They persist between REPL inputs,
+but expand before runtime evaluation and are not runtime function values. The
+expander rejects incorrect argument counts, non-quoted results, and runaway
+recursive expansion. Expansion supports syntax-only macros, not hygienic macro
+namespacing.
+
 ### Return
 
 ```monkey
@@ -216,6 +233,7 @@ print("Hello!", 42, true)
 ## Feature
 - [x] Unicode support
 - [x] for-in loops
+- [x] Syntactic macros (`macro`, `quote`, `unquote`)
 - [x] logical operators
 
 ## Roadmap
@@ -240,6 +258,11 @@ print("Hello!", 42, true)
 - [ ] Type conversion functions (`int()`, `string()`, `float()`)
 - [ ] String indexing (`str[0]`)
 
+### Language design (future)
+- [ ] Methods on structs without class inheritance (Go/Rust)
+- [ ] Structural interfaces and explicit traits (`impl`-style)
+- [ ] Function decorators as composition, not AST rewrites
+
 ### Low Priority
 - [ ] switch / case
 - [ ] File I/O
@@ -252,6 +275,7 @@ print("Hello!", 42, true)
 ## main text
 
 - [Writing An Interpreter In Go](https://interpreterbook.com/)
+- [The Lost Chapter: A Macro System For Monkey](https://interpreterbook.com/lost/)
 - [Writing A Compiler In Go](https://compilerbook.com/)
 - [monkey.org](https://monkeylang.org/)
 - [official-code](https://interpreterbook.com/waiig_code_1.7.zip)

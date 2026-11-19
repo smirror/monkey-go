@@ -267,6 +267,23 @@ func (fl *FunctionLiteral) String() string {
 	return out.String()
 }
 
+// MacroLiteral is a syntactic macro, evaluated only during expansion.
+type MacroLiteral struct {
+	Token      token.Token // 'macro' token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (ml *MacroLiteral) expressionNode()      {}
+func (ml *MacroLiteral) TokenLiteral() string { return ml.Token.Literal }
+func (ml *MacroLiteral) String() string {
+	var params []string
+	for _, p := range ml.Parameters {
+		params = append(params, p.String())
+	}
+	return ml.TokenLiteral() + "(" + strings.Join(params, ", ") + ") {" + ml.Body.String() + "}"
+}
+
 type CallExpression struct {
 	Token     token.Token // '(' token
 	Function  Expression  // Identifier or FunctionLiteral

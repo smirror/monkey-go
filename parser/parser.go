@@ -81,6 +81,7 @@ func New(l *lexer.Lexer) *Parser {
 	p.registerPrefix(token.LPAREN, p.parseGroupedExpression)
 	p.registerPrefix(token.IF, p.parseIfExpression)
 	p.registerPrefix(token.FUNCTION, p.parseFunctionExpression)
+	p.registerPrefix(token.MACRO, p.parseMacroLiteral)
 	p.registerPrefix(token.LBRACKET, p.parseArrayLiteral)
 	p.registerPrefix(token.LBRACE, p.parseHashMapLiteral)
 
@@ -394,21 +395,28 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 }
 
 func (p *Parser) parseFunctionExpression() ast.Expression {
-	lit := &ast.FunctionLiteral{Token: p.curToken}
+	return p.parseCallableLiteral()
+}
 
+func (p *Parser) parseMacroLiteral() ast.Expression {
+	return p.parseCallableLiteral()
+}
+
+// Functions and macros share their parameter-list and block syntax.
+func (p *Parser) parseCallableLiteral() ast.Expression {
+	literalToken := p.curToken
 	if !p.expectPeek(token.LPAREN) {
 		return nil
 	}
-
-	lit.Parameters = p.parseFunctionParameters()
-
+	parameters := p.parseFunctionParameters()
 	if !p.expectPeek(token.LBRACE) {
 		return nil
 	}
-
-	lit.Body = p.parseBlockStatement()
-
-	return lit
+	body := p.parseBlockStatement()
+	if literalToken.Type == token.MACRO {
+		return &ast.MacroLiteral{Token: literalToken, Parameters: parameters, Body: body}
+	}
+	return &ast.FunctionLiteral{Token: literalToken, Parameters: parameters, Body: body}
 }
 
 func (p *Parser) parseFunctionParameters() []*ast.Identifier {
@@ -445,27 +453,7 @@ func (p *Parser) parseCallExpression(function ast.Expression) ast.Expression {
 }
 
 func (p *Parser) parseCallArguments() []ast.Expression {
-	var args []ast.Expression
-
-	if p.peekTokenIs(token.RPAREN) {
-		p.nextToken()
-		return args
-	}
-
-	p.nextToken()
-	args = append(args, p.parseExpression(LOWEST))
-
-	for p.peekTokenIs(token.COMMA) {
-		p.nextToken()
-		p.nextToken()
-		args = append(args, p.parseExpression(LOWEST))
-	}
-
-	if !p.expectPeek(token.RPAREN) {
-		return nil
-	}
-
-	return args
+	return p.parseExpressionList(token.RPAREN)
 }
 
 func (p *Parser) parseStringLiteral() ast.Expression {
