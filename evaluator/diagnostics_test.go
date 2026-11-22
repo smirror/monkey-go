@@ -7,6 +7,7 @@ import (
 	"monkey-go/object"
 	"monkey-go/parser"
 	"monkey-go/token"
+	"reflect"
 	"testing"
 )
 
@@ -87,14 +88,7 @@ func TestRuntimeStackOnlyIncludesEnteredFunctions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			err := runtimeError(t, evalNamed(t, "case.mk", tt.source, object.NewEnvironment()))
-			if len(err.Stack) != len(tt.frames) {
-				t.Fatalf("stack = %+v, want %v", err.Stack, tt.frames)
-			}
-			for i, name := range tt.frames {
-				if err.Stack[i].Name != name {
-					t.Errorf("frame %d = %q, want %q", i, err.Stack[i].Name, name)
-				}
-			}
+			checkFrameNames(t, err.Stack, tt.frames)
 			if err.Span.Source.Name != "case.mk" {
 				t.Fatalf("error has no source: %+v", err.Span)
 			}
@@ -120,7 +114,7 @@ func TestRuntimeDiagnosticsDoNotMutateHostErrors(t *testing.T) {
 			t.Fatalf("incorrect host error annotation: %+v", err)
 		}
 	}
-	if shared.Span.Source != nil || len(shared.Stack) != 0 || shared.Kind != "" {
+	if !reflect.DeepEqual(shared, &object.Error{Message: "host failure"}) {
 		t.Fatalf("shared host error was mutated: %+v", shared)
 	}
 }
@@ -151,5 +145,16 @@ func TestHostErrorLocationSurvivesKindAnnotation(t *testing.T) {
 	}
 	if shared.Kind != "" {
 		t.Fatalf("host-owned error was changed: %+v", shared)
+	}
+}
+
+func checkFrameNames(t *testing.T, frames []diagnostic.Frame, want []string) {
+	t.Helper()
+	var names []string
+	for _, frame := range frames {
+		names = append(names, frame.Name)
+	}
+	if !reflect.DeepEqual(names, want) {
+		t.Fatalf("stack names = %v, want %v", names, want)
 	}
 }

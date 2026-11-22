@@ -8,16 +8,18 @@ import (
 	"testing"
 )
 
+type sourceFormatCase struct {
+	name     string
+	text     string
+	start    token.Position
+	end      token.Position
+	location string
+	line     string
+	marker   string
+}
+
 func TestFormatSourcePositionsAndDisplayWidths(t *testing.T) {
-	tests := []struct {
-		name     string
-		text     string
-		start    token.Position
-		end      token.Position
-		location string
-		line     string
-		marker   string
-	}{
+	checkSourceFormats(t, []sourceFormatCase{
 		{
 			name: "ASCII expression", text: "1 + missing",
 			start: position(4, 1, 5), end: position(11, 1, 12),
@@ -43,6 +45,11 @@ func TestFormatSourcePositionsAndDisplayWidths(t *testing.T) {
 			start: position(2, 1, 3), end: position(3, 1, 4),
 			location: "1:3", line: "a    x", marker: "     ^",
 		},
+	})
+}
+
+func TestFormatSourceLineEndings(t *testing.T) {
+	checkSourceFormats(t, []sourceFormatCase{
 		{
 			name: "LF line ending", text: "one\ntwo",
 			start: position(4, 2, 1), end: position(7, 2, 4),
@@ -58,6 +65,11 @@ func TestFormatSourcePositionsAndDisplayWidths(t *testing.T) {
 			start: position(4, 2, 1), end: position(7, 2, 4),
 			location: "2:1", line: "two", marker: "^~~",
 		},
+	})
+}
+
+func TestFormatEOFAndMultilineSpans(t *testing.T) {
+	checkSourceFormats(t, []sourceFormatCase{
 		{
 			name: "EOF after text", text: "abc",
 			start: position(3, 1, 4), end: position(3, 1, 4),
@@ -83,9 +95,14 @@ func TestFormatSourcePositionsAndDisplayWidths(t *testing.T) {
 			start: position(4, 1, 5), end: position(13, 2, 6),
 			location: "1:5", line: "one two", marker: "    ^~~",
 		},
-	}
+	})
+}
+
+func checkSourceFormats(t *testing.T, tests []sourceFormatCase) {
+	t.Helper()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			t.Helper()
 			d := diagnostic.Diagnostic{
 				Kind: diagnostic.Runtime, Message: "boom",
 				Span: token.Span{

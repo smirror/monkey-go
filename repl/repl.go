@@ -25,46 +25,56 @@ func Start(in io.Reader, out io.Writer) {
 // process-stdout behavior; builtin IO routing is a separate runtime facility.
 func StartWithErrorWriter(in io.Reader, out, errOut io.Writer) {
 	scanner := bufio.NewScanner(in)
-	env := object.NewEnvironment()
+	session := replSession{env: object.NewEnvironment(), out: out, errOut: errOut}
 	var input strings.Builder
-	submission := 0
 	for {
 		source, done, err := nextREPLSource(scanner, out, &input)
 		if err != nil {
-			_ = diagnostic.Write(errOut, diagnostic.Diagnostic{Kind: diagnostic.IO, Message: err.Error()})
+			session.reportIOError(err)
 			return
 		}
-		if source != "" {
-			submission++
-			name := fmt.Sprintf("<repl:%d>", submission)
-			if !evaluateREPLSource(name, source, env, out, errOut) {
-				return
-			}
-		}
-		if done {
+		if !session.evaluateREPLSource(source) || done {
 			return
 		}
 	}
 }
 
-func evaluateREPLSource(name, source string, env *object.Environment, out, errOut io.Writer) bool {
+type replSession struct {
+	env         *object.Environment
+	out, errOut io.Writer
+	submission  int
+}
+
+func (s *replSession) evaluateREPLSource(source string) bool {
+	if source == "" {
+		return true
+	}
+	s.submission++
+	name := fmt.Sprintf("<repl:%d>", s.submission)
 	p := parser.New(lexer.NewWithFilename(name, source))
 	program := p.ParseProgram()
 	if len(p.Diagnostics()) != 0 {
-		return printParserErrors(errOut, p.Diagnostics())
+		return printParserErrors(s.errOut, p.Diagnostics())
 	}
-	value := evaluator.Eval(program, env)
+	return s.printValue(evaluator.Eval(program, s.env))
+}
+
+func (s *replSession) printValue(value object.Object) bool {
 	if err, ok := value.(*object.Error); ok {
-		return diagnostic.Write(errOut, err.Diagnostic()) == nil
+		return diagnostic.Write(s.errOut, err.Diagnostic()) == nil
 	}
 	if value == nil {
 		return true
 	}
-	if _, err := io.WriteString(out, value.Inspect()+"\n"); err != nil {
-		_ = diagnostic.Write(errOut, diagnostic.Diagnostic{Kind: diagnostic.IO, Message: err.Error()})
+	if _, err := io.WriteString(s.out, value.Inspect()+"\n"); err != nil {
+		s.reportIOError(err)
 		return false
 	}
 	return true
+}
+
+func (s *replSession) reportIOError(err error) {
+	_ = diagnostic.Write(s.errOut, diagnostic.Diagnostic{Kind: diagnostic.IO, Message: err.Error()})
 }
 
 func printParserErrors(out io.Writer, errors []parser.Diagnostic) bool {
