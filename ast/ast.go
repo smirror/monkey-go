@@ -8,6 +8,7 @@ import (
 
 // The base Node interface
 type Node interface {
+	Span() token.Span
 	TokenLiteral() string
 	String() string
 }
@@ -25,6 +26,7 @@ type Expression interface {
 }
 
 type Program struct {
+	SourceLocation
 	Statements []Statement
 }
 
@@ -46,6 +48,7 @@ func (p *Program) String() string {
 }
 
 type LetStatement struct {
+	SourceLocation
 	Token token.Token // token.LET token
 	Name  *Identifier
 	Value Expression
@@ -70,6 +73,7 @@ func (ls *LetStatement) String() string {
 }
 
 type ReturnStatement struct {
+	SourceLocation
 	Token       token.Token // 'return' token
 	ReturnValue Expression
 }
@@ -91,6 +95,7 @@ func (rs *ReturnStatement) String() string {
 }
 
 type ExpressionStatement struct {
+	SourceLocation
 	Token      token.Token // 'return' token
 	Expression Expression
 }
@@ -107,6 +112,7 @@ func (es *ExpressionStatement) String() string {
 
 // Expressions
 type Identifier struct {
+	SourceLocation
 	Token token.Token // token/IDENT
 	Value string
 }
@@ -116,6 +122,7 @@ func (i *Identifier) TokenLiteral() string { return i.Token.Literal }
 func (i *Identifier) String() string       { return i.Value }
 
 type IntegerLiteral struct {
+	SourceLocation
 	Token token.Token
 	Value int64
 }
@@ -125,6 +132,7 @@ func (il *IntegerLiteral) TokenLiteral() string { return il.Token.Literal }
 func (il *IntegerLiteral) String() string       { return il.Token.Literal }
 
 type PrefixExpression struct {
+	SourceLocation
 	Token    token.Token // 前置トークン
 	Operator string
 	Right    Expression
@@ -143,6 +151,7 @@ func (pe *PrefixExpression) String() string {
 }
 
 type InfixExpression struct {
+	SourceLocation
 	Token    token.Token // 演算子トークン, for example +
 	Left     Expression  // 左辺のノード
 	Operator string      // 演算子
@@ -163,8 +172,8 @@ func (oe *InfixExpression) String() string {
 	return out.String()
 }
 
-
 type Boolean struct {
+	SourceLocation
 	Token token.Token
 	Value bool
 }
@@ -174,6 +183,7 @@ func (b *Boolean) TokenLiteral() string { return b.Token.Literal }
 func (b *Boolean) String() string       { return b.Token.Literal }
 
 type IfExpression struct {
+	SourceLocation
 	Token       token.Token // 'if' token
 	Condition   Expression
 	Consequence *BlockStatement
@@ -197,8 +207,8 @@ func (ie *IfExpression) String() string {
 	return out.String()
 }
 
-
 type ForInStatement struct {
+	SourceLocation
 	Token    token.Token // for
 	Variable *Identifier
 	Iterable Expression
@@ -226,6 +236,7 @@ func (fs *ForInStatement) String() string {
 }
 
 type BlockStatement struct {
+	SourceLocation
 	Token      token.Token
 	Statements []Statement
 }
@@ -243,6 +254,7 @@ func (bs *BlockStatement) String() string {
 }
 
 type FunctionLiteral struct {
+	SourceLocation
 	Token      token.Token // 'fn' token
 	Parameters []*Identifier
 	Body       *BlockStatement
@@ -269,6 +281,7 @@ func (fl *FunctionLiteral) String() string {
 
 // MacroLiteral is a syntactic macro, evaluated only during expansion.
 type MacroLiteral struct {
+	SourceLocation
 	Token      token.Token // 'macro' token
 	Parameters []*Identifier
 	Body       *BlockStatement
@@ -285,6 +298,7 @@ func (ml *MacroLiteral) String() string {
 }
 
 type CallExpression struct {
+	SourceLocation
 	Token     token.Token // '(' token
 	Function  Expression  // Identifier or FunctionLiteral
 	Arguments []Expression
@@ -309,6 +323,7 @@ func (ce *CallExpression) String() string {
 }
 
 type StringLiteral struct {
+	SourceLocation
 	Token token.Token
 	Value string
 }
@@ -318,6 +333,7 @@ func (sl *StringLiteral) TokenLiteral() string { return sl.Token.Literal }
 func (sl *StringLiteral) String() string       { return sl.Token.Literal }
 
 type ArrayLiteral struct {
+	SourceLocation
 	Token    token.Token // the '[' token
 	Elements []Expression
 }
@@ -340,6 +356,7 @@ func (al *ArrayLiteral) String() string {
 }
 
 type IndexExpression struct {
+	SourceLocation
 	Token token.Token // The [ token
 	Left  Expression
 	Index Expression
@@ -360,6 +377,7 @@ func (ie *IndexExpression) String() string {
 }
 
 type HashMapLiteral struct {
+	SourceLocation
 	Token token.Token // the '{' token
 	Pairs map[Expression]Expression
 }

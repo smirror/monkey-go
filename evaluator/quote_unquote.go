@@ -32,7 +32,7 @@ func quote(node ast.Node, env *object.Environment) object.Object {
 		}
 		replacement, err := evalUnquoteCall(call, env)
 		if err != nil {
-			failure = err
+			failure = withErrorSpan(err, call.Span()).(*object.Error)
 			return current
 		}
 		return replacement
@@ -54,21 +54,22 @@ func evalUnquoteCall(call *ast.CallExpression, env *object.Environment) (ast.Exp
 	if errObj, ok := value.(*object.Error); ok {
 		return nil, errObj
 	}
-	replacement, ok := objectToExpression(value)
+	replacement, ok := objectToExpression(value, call.Span())
 	if !ok {
 		return nil, newError("cannot unquote %s as an expression", value.Type())
 	}
 	return replacement, nil
 }
 
-func objectToExpression(value object.Object) (ast.Expression, bool) {
+func objectToExpression(value object.Object, origin token.Span) (ast.Expression, bool) {
+	var expression ast.Expression
 	switch value := value.(type) {
 	case *object.Integer:
 		literal := strconv.FormatInt(value.Value, 10)
-		return &ast.IntegerLiteral{
-			Token: token.Token{Type: token.INT, Literal: literal},
+		expression = &ast.IntegerLiteral{
+			Token: token.Token{Type: token.INT, Literal: literal, Span: origin},
 			Value: value.Value,
-		}, true
+		}
 	case *object.Boolean:
 		literal := "false"
 		typeName := token.TokenType(token.FALSE)
@@ -76,19 +77,21 @@ func objectToExpression(value object.Object) (ast.Expression, bool) {
 			literal = "true"
 			typeName = token.TRUE
 		}
-		return &ast.Boolean{
-			Token: token.Token{Type: typeName, Literal: literal},
+		expression = &ast.Boolean{
+			Token: token.Token{Type: typeName, Literal: literal, Span: origin},
 			Value: value.Value,
-		}, true
+		}
 	case *object.String:
-		return &ast.StringLiteral{
-			Token: token.Token{Type: token.STRING, Literal: value.Value},
+		expression = &ast.StringLiteral{
+			Token: token.Token{Type: token.STRING, Literal: value.Value, Span: origin},
 			Value: value.Value,
-		}, true
+		}
 	case *object.Quote:
 		expression, ok := value.Node.(ast.Expression)
 		return expression, ok
 	default:
 		return nil, false
 	}
+	ast.SetSpan(expression, origin)
+	return expression, true
 }

@@ -1,7 +1,6 @@
 package evaluator
 
 import (
-	"fmt"
 	"monkey-go/ast"
 	"monkey-go/object"
 )
@@ -44,7 +43,7 @@ func ExpandMacros(program ast.Node, env *object.Environment) (ast.Node, error) {
 			return program, nil
 		}
 	}
-	return nil, fmt.Errorf("macro expansion exceeded %d passes", maxPasses)
+	return nil, newMacroExpansionError(program.Span(), "macro expansion exceeded %d passes", maxPasses)
 }
 
 func expandMacroPass(program ast.Node, env *object.Environment) (ast.Node, bool, error) {
@@ -85,7 +84,7 @@ func lookupMacro(call *ast.CallExpression, env *object.Environment) (string, *ob
 
 func expandMacroCall(name string, call *ast.CallExpression, macro *object.Macro) (ast.Expression, error) {
 	if len(call.Arguments) != len(macro.Parameters) {
-		return nil, fmt.Errorf("macro %s expects %d arguments, got %d", name, len(macro.Parameters), len(call.Arguments))
+		return nil, newMacroExpansionError(call.Span(), "macro %s expects %d arguments, got %d", name, len(macro.Parameters), len(call.Arguments))
 	}
 	local := object.NewEnclosedEnvironment(macro.Env)
 	for i, parameter := range macro.Parameters {
@@ -93,15 +92,15 @@ func expandMacroCall(name string, call *ast.CallExpression, macro *object.Macro)
 	}
 	evaluated := unwrapReturnValue(Eval(macro.Body, local))
 	if errObj, ok := evaluated.(*object.Error); ok {
-		return nil, fmt.Errorf("macro %s: %s", name, errObj.Message)
+		return nil, macroEvaluationError(name, call, errObj)
 	}
 	quoted, ok := evaluated.(*object.Quote)
 	if !ok {
-		return nil, fmt.Errorf("macro %s must return quote(...)", name)
+		return nil, newMacroExpansionError(call.Span(), "macro %s must return quote(...)", name)
 	}
 	expression, ok := quoted.Node.(ast.Expression)
 	if !ok {
-		return nil, fmt.Errorf("macro %s returned a non-expression AST node", name)
+		return nil, newMacroExpansionError(call.Span(), "macro %s returned a non-expression AST node", name)
 	}
 	return expression, nil
 }

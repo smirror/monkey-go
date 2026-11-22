@@ -42,7 +42,12 @@ func evalCallExpression(node *ast.CallExpression, env *object.Environment) objec
 	if len(args) == 1 && isError(args[0]) {
 		return args[0]
 	}
-	return applyFunction(function, args)
+	value := applyFunction(function, args)
+	fn, entered := function.(*object.Function)
+	if !entered || len(args) != len(fn.Parameters) {
+		return value
+	}
+	return withCallFrame(value, node)
 }
 
 func evalArrayLiteral(node *ast.ArrayLiteral, env *object.Environment) object.Object {

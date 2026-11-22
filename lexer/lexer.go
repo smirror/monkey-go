@@ -2,30 +2,64 @@ package lexer
 
 import (
 	"monkey-go/token"
+	"unicode/utf8"
 )
 
 type Lexer struct {
-	input        []rune
-	position     int  // 入力における現在の位置
-	readPosition int  // 入力における次の位置
-	r            rune // 現在見ている文字
+	input        string
+	source       *token.Source
+	position     int // UTF-8 byte offset of the current rune
+	readPosition int // UTF-8 byte offset of the next rune
+	r            rune
+	current      token.Position
+	next         token.Position
 }
 
 func New(input string) *Lexer {
-	ir := []rune(input)
-	l := &Lexer{input: ir}
+	return NewWithFilename("", input)
+}
+
+// NewWithFilename associates diagnostics with a source name and text snapshot.
+func NewWithFilename(filename, input string) *Lexer {
+	l := &Lexer{
+		input:  input,
+		source: &token.Source{Name: filename, Text: input},
+		next:   token.Position{Line: 1, Column: 1},
+	}
 	l.readRune()
 	return l
 }
 
 func (l *Lexer) readRune() {
-	if l.readPosition >= len(l.input) { // input = Null or 終端に達した場合
-		l.r = 0
-	} else {
-		l.r = l.input[l.readPosition]
-	}
+	previous := l.r
 	l.position = l.readPosition
-	l.readPosition += 1
+	l.current = l.next
+	if l.atEnd() {
+		l.r = 0
+		return
+	}
+	var size int
+	l.r, size = utf8.DecodeRuneInString(l.input[l.position:])
+	l.readPosition += size
+	l.next = advancePosition(l.current, l.r, previous, size)
+}
+
+func (l *Lexer) atEnd() bool {
+	return l.position >= len(l.input)
+}
+
+// CRLF is one newline; a lone CR or LF is also a newline.
+func advancePosition(pos token.Position, current, previous rune, size int) token.Position {
+	pos.Offset += size
+	if current == '\r' || current == '\n' {
+		if current != '\n' || previous != '\r' {
+			pos.Line++
+		}
+		pos.Column = 1
+	} else {
+		pos.Column++
+	}
+	return pos
 }
 
 var singleCharacterTokens = map[rune]token.TokenType{
@@ -37,15 +71,26 @@ var singleCharacterTokens = map[rune]token.TokenType{
 }
 
 func (l *Lexer) NextToken() token.Token {
-	var tok token.Token
+	l.skipIgnored()
+	start := l.current
+	tok := l.readToken()
+	tok.Span = token.Span{Source: l.source, Start: start, End: l.current}
+	return tok
+}
 
+func (l *Lexer) skipIgnored() {
 	l.skipWhitespace()
-	// Allow the documented for examples to include trailing // comments.
 	for l.r == '/' && l.peekRune() == '/' {
 		l.skipLineComment()
 		l.skipWhitespace()
 	}
+}
 
+func (l *Lexer) readToken() token.Token {
+	if l.atEnd() {
+		return token.Token{Type: token.EOF}
+	}
+	var tok token.Token
 	switch l.r {
 	case '=':
 		tok = l.makeTwoCharToken('=', token.EQ, token.ASSIGN)
@@ -58,10 +103,7 @@ func (l *Lexer) NextToken() token.Token {
 	case '|':
 		tok = l.makeTwoCharToken('|', token.OR, token.ILLEGAL)
 	case '"':
-		tok.Type = token.STRING
-		tok.Literal = l.readString()
-	case 0:
-		tok = token.Token{Type: token.EOF, Literal: ""}
+		return l.readString()
 	default:
 		if kind, ok := singleCharacterTokens[l.r]; ok {
 			tok = newToken(kind, l.r)
@@ -85,7 +127,7 @@ func (l *Lexer) NextToken() token.Token {
 }
 
 func (l *Lexer) skipLineComment() {
-	for l.r != 0 && l.r != '\n' && l.r != '\r' {
+	for !l.atEnd() && l.r != '\n' && l.r != '\r' {
 		l.readRune()
 	}
 }
@@ -101,7 +143,7 @@ func (l *Lexer) readIdentifier() string {
 	for isLetter(l.r) {
 		l.readRune()
 	}
-	return string(l.input[position:l.position])
+	return l.input[position:l.position]
 }
 
 func isLetter(r rune) bool {
@@ -113,7 +155,7 @@ func (l *Lexer) readNumber() string {
 	for isDigit(l.r) {
 		l.readRune()
 	}
-	return string(l.input[position:l.position])
+	return l.input[position:l.position]
 }
 
 func isDigit(r rune) bool {
@@ -138,16 +180,20 @@ func (l *Lexer) peekRune() rune {
 	if l.readPosition >= len(l.input) {
 		return 0
 	}
-	return l.input[l.readPosition]
+	r, _ := utf8.DecodeRuneInString(l.input[l.readPosition:])
+	return r
 }
 
-func (l *Lexer) readString() string {
-	position := l.position + 1
-	for {
+func (l *Lexer) readString() token.Token {
+	position := l.position
+	l.readRune()
+	for !l.atEnd() && l.r != '"' {
 		l.readRune()
-		if l.r == '"' || l.r == 0 {
-			break
-		}
 	}
-	return string(l.input[position:l.position])
+	if l.atEnd() {
+		return token.Token{Type: token.ILLEGAL, Literal: l.input[position:l.position]}
+	}
+	literal := l.input[position+1 : l.position]
+	l.readRune()
+	return token.Token{Type: token.STRING, Literal: literal}
 }

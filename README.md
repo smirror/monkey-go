@@ -61,6 +61,11 @@ a == b // false
 a != b // true
 ```
 
+Integer arithmetic uses signed 64-bit values. Division by zero and overflow
+(in addition, subtraction, multiplication, division, or unary minus) return
+a Monkey runtime error rather than panicking or silently wrapping. Division
+truncates toward zero.
+
 ### Booleans
 
 ```monkey
@@ -140,6 +145,9 @@ add(3, 4)  // 7
 ```
 
 Functions are first-class values. The last evaluated expression is the return value.
+Function calls require exactly the declared number of arguments; otherwise
+they return a Monkey runtime error. An empty function body returns `null`.
+
 
 ```monkey
 let factorial = fn(n) {
@@ -167,6 +175,17 @@ but expand before runtime evaluation and are not runtime function values. The
 expander rejects incorrect argument counts, non-quoted results, and runaway
 recursive expansion. Expansion supports syntax-only macros, not hygienic macro
 namespacing.
+
+Expansion errors are reported on the REPL diagnostic stream and retain their
+source locations. Errors while evaluating a macro keep the definition's source
+and include the macro call site; the REPL can then accept another submission.
+Quoted arguments keep the source of the argument, while literals computed by
+`unquote` use the originating `unquote(...)` range. Rewriting a macro does not
+overwrite the locations in its reusable definition.
+
+For embedding, `evaluator.ExpandMacros` still returns `(ast.Node, error)`.
+An `*evaluator.MacroExpansionError` exposes `Diagnostic()` with kind `macro`,
+while its `Error()` method preserves the message-only form.
 
 ### Return
 
@@ -221,6 +240,76 @@ len("こんにちは")  // 5
 
 print("Hello!", 42, true)
 ```
+
+## Source Locations
+
+Tokens and parsed AST nodes retain a `token.Span` with a source name, the original
+source text, and a half-open range `[Start, End)`. `Offset` is a zero-based UTF-8
+byte offset; `Line` and `Column` are one-based, and columns count Unicode runes
+(including a tab as one column). CRLF counts as one newline; lone CR and LF also
+start a new line. EOF has a stable, zero-width span.
+
+Use `lexer.NewWithFilename(filename, input)` to name a source; `lexer.New(input)`
+remains available with an unnamed source. `Parser.Diagnostics()` returns syntax
+errors with spans, while `Parser.Errors()` preserves the message-only API.
+Unterminated strings and illegal characters are diagnosed instead of being
+accepted or silently ending the input.
+
+`ast.Node.Span()` covers the parsed expression or statement, including its
+grouping/closing delimiters and a trailing semicolon when present. The node's
+`Token.Span` still identifies its own literal, keyword, or operator. Sources are
+immutable snapshots shared by nodes, so an earlier REPL definition keeps its
+original text when later submissions are parsed. Manually constructed AST nodes
+have an unknown (zero) span unless one is attached with `ast.SetSpan`.
+
+## Diagnostics
+
+Parser and runtime errors carry a kind, message, source span, and (for runtime
+errors) the entered user-function call sites. `Parser.Errors()` and
+`object.Error.Message`/`Inspect()` retain their message-only APIs. Use
+`Parser.Diagnostics()` or `object.Error.Diagnostic()` for structured information,
+and `diagnostic.Format` / `diagnostic.Write` to render it.
+
+The command-line REPL writes diagnostics to stderr, and prompts/results to
+stdout. `repl.Start(in, out)` retains combined output for compatibility;
+`repl.StartWithErrorWriter(in, out, errOut)` separates diagnostics. The `print`
+builtin still writes to process stdout; routing all builtin IO through a host
+writer is tracked separately in #208.
+
+Each complete REPL submission has a source name such as `<repl:1>`. A function
+keeps the source that defined it, even when it is called by a later submission:
+
+```text
+>> let divide = fn(x) {
+..   10 / x
+.. };
+fn(x){
+(10 / x)
+}
+>> divide(0)
+<repl:1>:2:6: runtime error: division by zero
+  |   10 / x
+  |      ^
+  at divide (<repl:2>:1:1)
+```
+
+Frames run from the innermost call outward. Calls whose callee or arguments
+failed before entry, calls with the wrong arity, and builtins do not add a user
+function frame. The original error location is never replaced by an outer
+statement's location. Syntax/runtime errors allow the REPL to continue;
+input/output failures stop the session. Unfinished input at EOF is diagnosed by
+the parser with its source location.
+
+Locations use rune columns. ASCII source lines use a caret underline. Lines
+containing non-ASCII text mark the offending range inline with `⟦` and `⟧`, for
+example `"日本" ⟦+⟧ 1`. This works independently of terminal widths, including
+emoji and combining sequences, and needs no external Unicode-width library.
+An empty `⟦⟧` marks a zero-width position such as EOF. Tabs render as four spaces
+and control characters are escaped. Multi-line ranges show their first line.
+Hand-built ASTs without positions still produce message-only diagnostics.
+
+The interpreter and its tests use only the Go standard library. Prefer the
+standard library and justify any future external module by a concrete need.
 
 ## Feature
 - [x] Unicode support

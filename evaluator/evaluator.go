@@ -3,6 +3,7 @@ package evaluator
 import (
 	"fmt"
 	"monkey-go/ast"
+	"monkey-go/diagnostic"
 	"monkey-go/object"
 	"monkey-go/token"
 )
@@ -14,6 +15,14 @@ var (
 )
 
 func Eval(node ast.Node, env *object.Environment) object.Object {
+	value := evalNode(node, env)
+	if !isError(value) || node == nil {
+		return value
+	}
+	return withErrorSpan(value, errorSpan(node))
+}
+
+func evalNode(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	// Statements
 	case *ast.Program:
@@ -81,6 +90,9 @@ func applyFunction(fn object.Object, args []object.Object) object.Object {
 	switch fn := fn.(type) {
 
 	case *object.Function:
+		if len(args) != len(fn.Parameters) {
+			return newError("wrong number of arguments. got=%d, want=%d", len(args), len(fn.Parameters))
+		}
 		extendedEnv := extendFunctionEnv(fn, args)
 		evaluated := Eval(fn.Body, extendedEnv)
 		return unwrapReturnValue(evaluated)
@@ -165,6 +177,9 @@ func evalBlockStatement(block *ast.BlockStatement, env *object.Environment) obje
 		}
 	}
 
+	if result == nil {
+		return NULL
+	}
 	return result
 }
 
@@ -184,8 +199,7 @@ func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 		return newError("unknown operator: -%s", right.Type())
 	}
 
-	value := right.(*object.Integer).Value
-	return &object.Integer{Value: -value}
+	return evalIntegerNegate(right.(*object.Integer).Value)
 }
 
 func evalInfixExpression(operator string, left, right object.Object) object.Object {
@@ -211,13 +225,13 @@ func evalIntegerInfixExpression(operator string, left, right object.Object) obje
 
 	switch operator {
 	case "+":
-		return &object.Integer{Value: leftVal + rightVal}
+		return evalIntegerAdd(leftVal, rightVal)
 	case "-":
-		return &object.Integer{Value: leftVal - rightVal}
+		return evalIntegerSubtract(leftVal, rightVal)
 	case "*":
-		return &object.Integer{Value: leftVal * rightVal}
+		return evalIntegerMultiply(leftVal, rightVal)
 	case "/":
-		return &object.Integer{Value: leftVal / rightVal}
+		return evalIntegerDivide(leftVal, rightVal)
 	case "<":
 		return nativeBoolToBooleanObject(leftVal < rightVal)
 	case ">":
@@ -281,7 +295,7 @@ func evalAssignmentExpression(node *ast.InfixExpression, env *object.Environment
 	}
 
 	if _, ok := env.Reassign(ident.Value, val); !ok {
-		return newError("identifier not found: " + ident.Value)
+		return withErrorSpan(newError("identifier not found: "+ident.Value), ident.Span())
 	}
 	return val
 }
@@ -326,7 +340,7 @@ func isTruthy(obj object.Object) bool {
 }
 
 func newError(format string, a ...any) *object.Error {
-	return &object.Error{Message: fmt.Sprintf(format, a...)}
+	return &object.Error{Kind: diagnostic.Runtime, Message: fmt.Sprintf(format, a...)}
 }
 
 func isError(obj object.Object) bool {
@@ -418,7 +432,7 @@ func evalHashMapLiteral(
 
 		hashKey, ok := key.(object.Hashable)
 		if !ok {
-			return newError("unusable as hash key: %s", key.Type())
+			return withErrorSpan(newError("unusable as hash key: %s", key.Type()), keyNode.Span())
 		}
 
 		value := Eval(valueNode, env)
