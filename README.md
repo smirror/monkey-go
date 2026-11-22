@@ -213,6 +213,27 @@ len("こんにちは")  // 5
 print("Hello!", 42, true)
 ```
 
+## Source Locations
+
+Tokens and parsed AST nodes retain a `token.Span` with a source name, the original
+source text, and a half-open range `[Start, End)`. `Offset` is a zero-based UTF-8
+byte offset; `Line` and `Column` are one-based, and columns count Unicode runes
+(including a tab as one column). CRLF counts as one newline; lone CR and LF also
+start a new line. EOF has a stable, zero-width span.
+
+Use `lexer.NewWithFilename(filename, input)` to name a source; `lexer.New(input)`
+remains available with an unnamed source. `Parser.Diagnostics()` returns syntax
+errors with spans, while `Parser.Errors()` preserves the message-only API.
+Unterminated strings and illegal characters are diagnosed instead of being
+accepted or silently ending the input.
+
+`ast.Node.Span()` covers the parsed expression or statement, including its
+grouping/closing delimiters and a trailing semicolon when present. The node's
+`Token.Span` still identifies its own literal, keyword, or operator. Sources are
+immutable snapshots shared by nodes, so an earlier REPL definition keeps its
+original text when later submissions are parsed. Manually constructed AST nodes
+have an unknown (zero) span unless one is attached with `ast.SetSpan`.
+
 ## Feature
 - [x] Unicode support
 - [x] for-in loops

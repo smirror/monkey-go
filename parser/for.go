@@ -15,7 +15,7 @@ func (p *Parser) parseForStatement() ast.Statement {
 }
 
 func (p *Parser) parseForInStatement(forToken token.Token) ast.Statement {
-	variable := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	variable := identifier(p.curToken)
 	if !p.expectPeek(token.IN) {
 		return nil
 	}
