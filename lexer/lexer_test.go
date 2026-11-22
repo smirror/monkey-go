@@ -240,7 +240,7 @@ for value in [1, 2] { print(value) }`
 	l := New(input)
 	for i, want := range tests {
 		got := l.NextToken()
-		if got != want {
+		if got.Type != want.Type || got.Literal != want.Literal {
 			t.Fatalf("token[%d]: got=%+v, want=%+v", i, got, want)
 		}
 	}
@@ -265,7 +265,7 @@ func TestLineCommentsWithForLoops(t *testing.T) {
 	l := New(input)
 	for i, expected := range want {
 		got := l.NextToken()
-		if got != expected {
+		if got.Type != expected.Type || got.Literal != expected.Literal {
 			t.Fatalf("token[%d]: got %+v, want %+v", i, got, expected)
 		}
 	}

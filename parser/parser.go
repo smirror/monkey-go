@@ -47,7 +47,8 @@ type (
 type Parser struct {
 	l *lexer.Lexer
 
-	errors []string
+	errors      []string
+	diagnostics []Diagnostic
 
 	curToken  token.Token
 	peekToken token.Token
@@ -111,17 +112,24 @@ func (p *Parser) Errors() []string {
 }
 
 func (p *Parser) peekError(t token.TokenType) {
+	if p.peekTokenIs(token.ILLEGAL) {
+		return // The lexer error was recorded when this token was read.
+	}
 	msg := fmt.Sprintf("expected next token to be %s, got %s instead.", t, p.peekToken.Type)
-	p.errors = append(p.errors, msg)
+	p.addError(msg, p.peekToken)
 }
 
 func (p *Parser) nextToken() {
 	p.curToken = p.peekToken
 	p.peekToken = p.l.NextToken()
+	p.addLexicalError(p.peekToken)
 }
 
 func (p *Parser) ParseProgram() *ast.Program {
-	return &ast.Program{Statements: p.parseStatements(token.EOF)}
+	start := p.curToken.Span
+	program := &ast.Program{Statements: p.parseStatements(token.EOF)}
+	p.locate(program, start)
+	return program
 }
 
 // parseStatements is shared by the top level and nested blocks. Failed
@@ -138,6 +146,13 @@ func (p *Parser) parseStatements(end token.TokenType) []ast.Statement {
 }
 
 func (p *Parser) parseStatement() ast.Statement {
+	start := p.curToken.Span
+	statement := p.parseStatementNode()
+	p.locate(statement, start)
+	return statement
+}
+
+func (p *Parser) parseStatementNode() ast.Statement {
 	switch p.curToken.Type {
 	case token.LET:
 		return p.parseLetStatement()
@@ -157,7 +172,7 @@ func (p *Parser) parseLetStatement() ast.Statement {
 		return nil
 	}
 
-	stmt.Name = &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	stmt.Name = identifier(p.curToken)
 
 	if !p.expectPeek(token.ASSIGN) {
 		return nil
@@ -229,15 +244,19 @@ func (p *Parser) parseExpressionStatement() ast.Statement {
 }
 
 func (p *Parser) parseIdentifier() ast.Expression {
-	return &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	return identifier(p.curToken)
 }
 
 func (p *Parser) noPrefixParseFnError(t token.TokenType) {
+	if t == token.ILLEGAL {
+		return // Avoid duplicating the diagnostic for an invalid token.
+	}
 	msg := fmt.Sprintf("no prefix parse function for %s found", t)
-	p.errors = append(p.errors, msg)
+	p.addError(msg, p.curToken)
 }
 
 func (p *Parser) parseExpression(precedence int) ast.Expression {
+	start := p.curToken.Span
 	prefix := p.prefixParseFns[p.curToken.Type]
 	if prefix == nil {
 		p.noPrefixParseFnError(p.curToken.Type)
@@ -247,6 +266,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 	if leftExp == nil {
 		return nil
 	}
+	p.locate(leftExp, start)
 
 	for !p.peekTokenIs(token.SEMICOLON) && precedence < p.peekPrecedence() {
 		infix := p.infixParseFns[p.peekToken.Type]
@@ -260,6 +280,7 @@ func (p *Parser) parseExpression(precedence int) ast.Expression {
 		if leftExp == nil {
 			return nil
 		}
+		p.locate(leftExp, start)
 	}
 
 	return leftExp
@@ -271,7 +292,7 @@ func (p *Parser) parserIntegerLiteral() ast.Expression {
 	value, err := strconv.ParseInt(p.curToken.Literal, 0, 64)
 	if err != nil {
 		msg := fmt.Sprintf("could not parse %q as integer", p.curToken.Literal)
-		p.errors = append(p.errors, msg)
+		p.addError(msg, p.curToken)
 		return nil
 	}
 	lit.Value = value
@@ -388,8 +409,9 @@ func (p *Parser) parseBlockStatement() *ast.BlockStatement {
 	p.nextToken()
 	block.Statements = p.parseStatements(token.RBRACE)
 	if p.curTokenIs(token.EOF) {
-		p.errors = append(p.errors, "unterminated block: expected } before EOF")
+		p.addError("unterminated block: expected } before EOF", p.curToken)
 	}
+	p.locate(block, block.Token.Span)
 	return block
 }
 
@@ -421,13 +443,13 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 
 	p.nextToken()
 
-	ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+	ident := identifier(p.curToken)
 	identifiers = append(identifiers, ident)
 
 	for p.peekTokenIs(token.COMMA) {
 		p.nextToken()
 		p.nextToken()
-		ident := &ast.Identifier{Token: p.curToken, Value: p.curToken.Literal}
+		ident := identifier(p.curToken)
 		identifiers = append(identifiers, ident)
 	}
 
