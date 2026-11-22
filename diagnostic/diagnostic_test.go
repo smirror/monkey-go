@@ -28,17 +28,17 @@ func TestFormatSourcePositionsAndDisplayWidths(t *testing.T) {
 		{
 			name: "wide characters before and within span", text: "日 + 本",
 			start: position(6, 1, 5), end: position(9, 1, 6),
-			location: "1:5", line: "日 + 本", marker: "     ^~",
+			location: "1:5", line: "日 + ⟦本⟧",
 		},
 		{
 			name: "combining mark before span", text: "e\u0301 + x",
 			start: position(6, 1, 6), end: position(7, 1, 7),
-			location: "1:6", line: "e\u0301 + x", marker: "    ^",
+			location: "1:6", line: "e\u0301 + ⟦x⟧",
 		},
 		{
 			name: "combining sequence within span", text: "e\u0301",
 			start: position(0, 1, 1), end: position(3, 1, 3),
-			location: "1:1", line: "e\u0301", marker: "^",
+			location: "1:1", line: "⟦e\u0301⟧",
 		},
 		{
 			name: "tab is four spaces even after text", text: "a\tx",
@@ -64,6 +64,26 @@ func TestFormatSourceLineEndings(t *testing.T) {
 			name: "CR line ending", text: "one\rtwo",
 			start: position(4, 2, 1), end: position(7, 2, 4),
 			location: "2:1", line: "two", marker: "^~~",
+		},
+	})
+}
+
+func TestFormatUnicodeSequencesAndEOF(t *testing.T) {
+	checkSourceFormats(t, []sourceFormatCase{
+		{
+			name: "joined emoji before span", text: "👩‍💻 + x",
+			start: position(14, 1, 7), end: position(15, 1, 8),
+			location: "1:7", line: "👩‍💻 + ⟦x⟧",
+		},
+		{
+			name: "emoji modifier within span", text: "👍🏽",
+			start: position(0, 1, 1), end: position(8, 1, 3),
+			location: "1:1", line: "⟦👍🏽⟧",
+		},
+		{
+			name: "EOF after Unicode text", text: "日本",
+			start: position(6, 1, 3), end: position(6, 1, 3),
+			location: "1:3", line: "日本⟦⟧",
 		},
 	})
 }
@@ -111,7 +131,10 @@ func checkSourceFormats(t *testing.T, tests []sourceFormatCase) {
 				},
 			}
 			want := "example.mk:" + tt.location + ": runtime error: boom\n" +
-				"  | " + tt.line + "\n  | " + tt.marker + "\n"
+				"  | " + tt.line + "\n"
+			if tt.marker != "" {
+				want += "  | " + tt.marker + "\n"
+			}
 			if got := diagnostic.Format(d); got != want {
 				t.Fatalf("formatted diagnostic:\n got %q\nwant %q", got, want)
 			}

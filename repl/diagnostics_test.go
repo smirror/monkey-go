@@ -47,6 +47,16 @@ func TestREPLDiagnosticUsesEarlierMultilineDefinition(t *testing.T) {
 	}
 }
 
+func TestREPLMarksErrorInlineOnUnicodeSourceLine(t *testing.T) {
+	var out, errOut bytes.Buffer
+	StartWithErrorWriter(strings.NewReader("\"日本\" + 1\nexit\n"), &out, &errOut)
+	want := "<repl:1>:1:6: runtime error: type mismatch: STRING + INTEGER\n" +
+		"  | \"日本\" ⟦+⟧ 1\n"
+	if got := errOut.String(); got != want {
+		t.Fatalf("got diagnostic %q, want %q", got, want)
+	}
+}
+
 func TestREPLIncompleteInputIsDiagnosedAtEOF(t *testing.T) {
 	for _, input := range []string{"let f = fn() {\n", "\"日本\n", "[1,\n"} {
 		t.Run(input, func(t *testing.T) {

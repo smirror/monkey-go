@@ -9,8 +9,6 @@ import (
 	"strings"
 	"unicode"
 	"unicode/utf8"
-
-	"github.com/mattn/go-runewidth"
 )
 
 type Kind string
@@ -42,8 +40,8 @@ func Write(out io.Writer, d Diagnostic) error {
 	return err
 }
 
-// Format uses one-based rune columns in locations. Source excerpts use terminal
-// cell widths, with tabs expanded to four spaces and control characters escaped.
+// Format uses one-based rune columns. ASCII excerpts use carets; Unicode
+// excerpts mark the range inline without relying on terminal cell widths.
 func Format(d Diagnostic) string {
 	var out strings.Builder
 	kind := string(d.Kind)
@@ -81,15 +79,26 @@ func excerpt(span token.Span) string {
 	if !ok {
 		return ""
 	}
-	// Keep the layout independent of the host's locale/environment variables.
-	width := runewidth.Condition{EastAsianWidth: false, StrictEmojiNeutral: true}
-	indent := width.StringWidth(displayText(line[:start]))
-	marked := width.StringWidth(displayText(line[:end])) - indent
+	if !isASCII(line) {
+		return "  | " + displayText(line[:start]) + "⟦" + displayText(line[start:end]) +
+			"⟧" + displayText(line[end:]) + "\n"
+	}
+	indent := len(displayText(line[:start]))
+	marked := len(displayText(line[start:end]))
 	if marked < 1 {
-		marked = 1 // EOF and zero-width marks still need a visible caret.
+		marked = 1 // EOF still needs a visible caret.
 	}
 	return "  | " + displayText(line) + "\n  | " + strings.Repeat(" ", indent) +
 		"^" + strings.Repeat("~", marked-1) + "\n"
+}
+
+func isASCII(text string) bool {
+	for i := 0; i < len(text); i++ {
+		if text[i] >= utf8.RuneSelf {
+			return false
+		}
+	}
+	return true
 }
 
 // sourceLine clips a multi-line span to its first source line. Invalid or absent

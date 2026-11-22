@@ -272,11 +272,16 @@ statement's location. Syntax/runtime errors allow the REPL to continue;
 input/output failures stop the session. Unfinished input at EOF is diagnosed by
 the parser with its source location.
 
-Locations use rune columns; the caret uses terminal cell widths. Japanese wide
-characters and combining marks are accounted for, tabs render as four spaces,
-and control characters are escaped. Ambiguous-width characters use one cell;
-font-specific emoji rendering can vary. Multi-line spans underline their first
-line. Hand-built ASTs without positions still produce message-only diagnostics.
+Locations use rune columns. ASCII source lines use a caret underline. Lines
+containing non-ASCII text mark the offending range inline with `⟦` and `⟧`, for
+example `"日本" ⟦+⟧ 1`. This works independently of terminal widths, including
+emoji and combining sequences, and needs no external Unicode-width library.
+An empty `⟦⟧` marks a zero-width position such as EOF. Tabs render as four spaces
+and control characters are escaped. Multi-line ranges show their first line.
+Hand-built ASTs without positions still produce message-only diagnostics.
+
+The interpreter and its tests use only the Go standard library. Prefer the
+standard library and justify any future external module by a concrete need.
 
 ## Feature
 - [x] Unicode support
