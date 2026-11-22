@@ -106,22 +106,39 @@ func checkLocatedTokens(t *testing.T, input string, want []locatedToken) {
 			source = got.Span.Source
 		}
 		checkSource(t, got.Span.Source, source, input)
-		if got.Type != expected.kind || got.Literal != expected.literal {
-			t.Fatalf("token[%d]: got %s %q, want %s %q", i, got.Type, got.Literal, expected.kind, expected.literal)
+		wantToken := token.Token{
+			Type:    expected.kind,
+			Literal: expected.literal,
+			Span:    token.Span{Source: source, Start: expected.start, End: expected.end},
 		}
-		if got.Span.Start != expected.start || got.Span.End != expected.end {
-			t.Fatalf("token[%d]: range = %+v, want %+v..%+v", i, got.Span, expected.start, expected.end)
+		if got != wantToken {
+			t.Fatalf("token[%d]: got %+v, want %+v", i, got, wantToken)
 		}
 	}
+	checkStableEOF(t, l)
+}
+
+func checkStableEOF(t *testing.T, l *Lexer) {
+	t.Helper()
 	firstEOF := l.NextToken()
-	if nextEOF := l.NextToken(); nextEOF != firstEOF || firstEOF.Type != token.EOF {
+	if firstEOF.Type != token.EOF {
+		t.Fatalf("expected EOF, got %+v", firstEOF)
+	}
+	if nextEOF := l.NextToken(); nextEOF != firstEOF {
 		t.Fatalf("EOF must have a stable location: first=%+v, next=%+v", firstEOF, nextEOF)
 	}
 }
 
 func checkSource(t *testing.T, got, want *token.Source, input string) {
 	t.Helper()
-	if got == nil || got != want || got.Name != "source.mk" || got.Text != input {
-		t.Fatalf("missing or changed source snapshot: %+v", got)
+	if got == nil {
+		t.Fatal("missing source snapshot")
+	}
+	if got != want {
+		t.Fatal("tokens do not share the same source snapshot")
+	}
+	expected := token.Source{Name: "source.mk", Text: input}
+	if *got != expected {
+		t.Fatalf("changed source snapshot: got %+v, want %+v", *got, expected)
 	}
 }

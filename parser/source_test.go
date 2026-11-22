@@ -41,17 +41,35 @@ func checkDiagnostic(t *testing.T, tt diagnosticCase) {
 		t.Fatal("expected a located diagnostic")
 	}
 	first := diagnostics[0]
-	if first.Message != tt.message || first.Span.Start != tt.start || first.Span.End != tt.end {
-		t.Fatalf("diagnostic = %+v, want %q at %+v..%+v", first, tt.message, tt.start, tt.end)
+	expected := Diagnostic{
+		Message: tt.message,
+		Span:    token.Span{Source: first.Span.Source, Start: tt.start, End: tt.end},
 	}
-	if first.Span.Source == nil || first.Span.Source.Name != "errors.mk" || first.Span.Source.Text != tt.input {
-		t.Fatalf("diagnostic lost its source: %+v", first.Span.Source)
+	if first != expected {
+		t.Fatalf("diagnostic = %+v, want %+v", first, expected)
 	}
-	if len(p.Errors()) != len(diagnostics) {
-		t.Fatalf("message and diagnostic counts differ: %v vs %v", p.Errors(), diagnostics)
+	checkDiagnosticSource(t, first.Span.Source, tt.input)
+	checkDiagnosticMessages(t, p.Errors(), diagnostics)
+}
+
+func checkDiagnosticSource(t *testing.T, source *token.Source, input string) {
+	t.Helper()
+	if source == nil {
+		t.Fatal("diagnostic lost its source")
+	}
+	expected := token.Source{Name: "errors.mk", Text: input}
+	if *source != expected {
+		t.Fatalf("diagnostic source = %+v, want %+v", *source, expected)
+	}
+}
+
+func checkDiagnosticMessages(t *testing.T, messages []string, diagnostics []Diagnostic) {
+	t.Helper()
+	if len(messages) != len(diagnostics) {
+		t.Fatalf("message and diagnostic counts differ: %v vs %v", messages, diagnostics)
 	}
 	for i, diagnostic := range diagnostics {
-		if diagnostic.Message != p.Errors()[i] {
+		if diagnostic.Message != messages[i] {
 			t.Fatalf("Errors()[%d] does not match its diagnostic", i)
 		}
 	}
@@ -155,10 +173,24 @@ func parseLocatedProgram(t *testing.T, input string) *ast.Program {
 
 func checkSpanText(t *testing.T, span token.Span, want string) {
 	t.Helper()
-	if span.Source == nil || span.Start.Offset < 0 || span.Start.Offset > span.End.Offset || span.End.Offset > len(span.Source.Text) {
-		t.Fatalf("invalid source range: %+v", span)
-	}
+	checkSpanBounds(t, span)
 	if got := span.Source.Text[span.Start.Offset:span.End.Offset]; got != want {
 		t.Fatalf("range text = %q, want %q (%+v)", got, want, span)
+	}
+}
+
+func checkSpanBounds(t *testing.T, span token.Span) {
+	t.Helper()
+	if span.Source == nil {
+		t.Fatal("range has no source snapshot")
+	}
+	if span.Start.Offset < 0 {
+		t.Fatalf("range starts before the source: %+v", span)
+	}
+	if span.Start.Offset > span.End.Offset {
+		t.Fatalf("range ends before it starts: %+v", span)
+	}
+	if span.End.Offset > len(span.Source.Text) {
+		t.Fatalf("range ends after the source: %+v", span)
 	}
 }
