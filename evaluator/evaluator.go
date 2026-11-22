@@ -3,6 +3,7 @@ package evaluator
 import (
 	"fmt"
 	"monkey-go/ast"
+	"monkey-go/diagnostic"
 	"monkey-go/object"
 	"monkey-go/token"
 )
@@ -14,6 +15,14 @@ var (
 )
 
 func Eval(node ast.Node, env *object.Environment) object.Object {
+	value := evalNode(node, env)
+	if !isError(value) || node == nil {
+		return value
+	}
+	return withErrorSpan(value, errorSpan(node))
+}
+
+func evalNode(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
 	// Statements
 	case *ast.Program:
@@ -286,7 +295,7 @@ func evalAssignmentExpression(node *ast.InfixExpression, env *object.Environment
 	}
 
 	if _, ok := env.Reassign(ident.Value, val); !ok {
-		return newError("identifier not found: " + ident.Value)
+		return withErrorSpan(newError("identifier not found: "+ident.Value), ident.Span())
 	}
 	return val
 }
@@ -331,7 +340,7 @@ func isTruthy(obj object.Object) bool {
 }
 
 func newError(format string, a ...any) *object.Error {
-	return &object.Error{Message: fmt.Sprintf(format, a...)}
+	return &object.Error{Kind: diagnostic.Runtime, Message: fmt.Sprintf(format, a...)}
 }
 
 func isError(obj object.Object) bool {
@@ -423,7 +432,7 @@ func evalHashMapLiteral(
 
 		hashKey, ok := key.(object.Hashable)
 		if !ok {
-			return newError("unusable as hash key: %s", key.Type())
+			return withErrorSpan(newError("unusable as hash key: %s", key.Type()), keyNode.Span())
 		}
 
 		value := Eval(valueNode, env)

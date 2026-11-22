@@ -17,7 +17,7 @@ func evalForInStatement(stmt *ast.ForInStatement, outer *object.Environment) obj
 	}
 	iterable, ok := value.(object.Iterable)
 	if !ok {
-		return newError("object is not iterable: %s", value.Type())
+		return withErrorSpan(newError("object is not iterable: %s", value.Type()), stmt.Iterable.Span())
 	}
 
 	env := object.NewEnclosedEnvironment(outer)
