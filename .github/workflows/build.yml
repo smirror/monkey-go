@@ -18,7 +18,7 @@ jobs:
       matrix:
         go-os: [ windows-latest, ubuntu-latest, macos-latest ]
     runs-on: ${{ matrix.go-os }}
-    name: Build ${{ matrix.go-os }} ${{ matrix.go-arch }}
+    name: Build ${{ matrix.go-os }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 

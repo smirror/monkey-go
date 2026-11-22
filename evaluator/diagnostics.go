@@ -15,14 +15,14 @@ func withErrorSpan(value object.Object, span token.Span) object.Object {
 	if err.Span.Start.Line > 0 && err.Kind != "" {
 		return value
 	}
-	copy := *err
-	if copy.Span.Start.Line == 0 {
-		copy.Span = span
+	located := *err
+	if located.Span.Start.Line == 0 {
+		located.Span = span
 	}
-	if copy.Kind == "" {
-		copy.Kind = diagnostic.Runtime
+	if located.Kind == "" {
+		located.Kind = diagnostic.Runtime
 	}
-	return &copy
+	return &located
 }
 
 func errorSpan(node ast.Node) token.Span {
@@ -45,8 +45,8 @@ func withCallFrame(value object.Object, node *ast.CallExpression) object.Object 
 	if identifier, ok := node.Function.(*ast.Identifier); ok {
 		name = identifier.Value
 	}
-	copy := *err
-	copy.Stack = append([]diagnostic.Frame(nil), err.Stack...)
-	copy.Stack = append(copy.Stack, diagnostic.Frame{Name: name, Span: node.Span()})
-	return &copy
+	traced := *err
+	traced.Stack = append([]diagnostic.Frame(nil), err.Stack...)
+	traced.Stack = append(traced.Stack, diagnostic.Frame{Name: name, Span: node.Span()})
+	return &traced
 }

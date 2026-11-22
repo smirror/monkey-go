@@ -1,9 +1,18 @@
 name: Greetings
 
-on: [pull_request_target, issues]
+on:
+  pull_request:
+    types: [opened]
+  issues:
+    types: [opened]
 
 jobs:
   greeting:
+    # Fork and Dependabot PRs have read-only tokens and cannot post greetings.
+    if: >-
+      github.event_name == 'issues' ||
+      (github.event.pull_request.head.repo.full_name == github.repository &&
+       github.actor != 'dependabot[bot]')
     runs-on: ubuntu-latest
     permissions:
       issues: write
@@ -11,6 +20,6 @@ jobs:
     steps:
     - uses: actions/first-interaction@v3
       with:
-        repo-token: ${{ secrets.GITHUB_TOKEN }}
-        issue-message: "Thanks **#** first issue, plz wait for owner comments"
-        pr-message: "Thanks **#** first pull request, plz wait for owner comments"
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        issue_message: "Thanks **#** first issue, plz wait for owner comments"
+        pr_message: "Thanks **#** first pull request, plz wait for owner comments"
