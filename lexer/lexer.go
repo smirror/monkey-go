@@ -63,11 +63,24 @@ func advancePosition(pos token.Position, current, previous rune, size int) token
 }
 
 var singleCharacterTokens = map[rune]token.TokenType{
-	'-': token.MINUS, '/': token.SLASH, '*': token.ASTERISK,
-	'<': token.LT, '>': token.GT, ';': token.SEMICOLON,
+	'+': token.PLUS, '-': token.MINUS, '/': token.SLASH,
+	'*': token.ASTERISK, '%': token.MODULO, ';': token.SEMICOLON,
 	':': token.COLON, ',': token.COMMA, '(': token.LPAREN,
 	')': token.RPAREN, '{': token.LBRACE, '}': token.RBRACE,
 	'[': token.LBRACKET, ']': token.RBRACKET,
+}
+
+var twoCharacterTokens = map[rune]struct {
+	second   rune
+	matched  token.TokenType
+	fallback token.TokenType
+}{
+	'=': {'=', token.EQ, token.ASSIGN},
+	'!': {'=', token.NOT_EQ, token.BANG},
+	'&': {'&', token.AND, token.ILLEGAL},
+	'|': {'|', token.OR, token.ILLEGAL},
+	'<': {'=', token.LTE, token.LT},
+	'>': {'=', token.GTE, token.GT},
 }
 
 func (l *Lexer) NextToken() token.Token {
@@ -90,38 +103,26 @@ func (l *Lexer) readToken() token.Token {
 	if l.atEnd() {
 		return token.Token{Type: token.EOF}
 	}
-	var tok token.Token
-	switch l.r {
-	case '=':
-		tok = l.makeTwoCharToken('=', token.EQ, token.ASSIGN)
-	case '+':
-		tok = newToken(token.PLUS, l.r)
-	case '!':
-		tok = l.makeTwoCharToken('=', token.NOT_EQ, token.BANG)
-	case '&':
-		tok = l.makeTwoCharToken('&', token.AND, token.ILLEGAL)
-	case '|':
-		tok = l.makeTwoCharToken('|', token.OR, token.ILLEGAL)
-	case '"':
-		return l.readString()
-	default:
-		if kind, ok := singleCharacterTokens[l.r]; ok {
-			tok = newToken(kind, l.r)
-			break
-		}
-		if isLetter(l.r) {
-			tok.Literal = l.readIdentifier()
-			tok.Type = token.LookupIdent(tok.Literal)
-			return tok
-		}
-		if isDigit(l.r) {
-			tok.Type = token.INT
-			tok.Literal = l.readNumber()
-			return tok
-		}
-		tok = newToken(token.ILLEGAL, l.r)
+	if operator, ok := twoCharacterTokens[l.r]; ok {
+		tok := l.makeTwoCharToken(operator.second, operator.matched, operator.fallback)
+		l.readRune()
+		return tok
 	}
-
+	if l.r == '"' {
+		return l.readString()
+	}
+	if isLetter(l.r) {
+		literal := l.readIdentifier()
+		return token.Token{Type: token.LookupIdent(literal), Literal: literal}
+	}
+	if isDigit(l.r) {
+		return token.Token{Type: token.INT, Literal: l.readNumber()}
+	}
+	kind, ok := singleCharacterTokens[l.r]
+	if !ok {
+		kind = token.ILLEGAL
+	}
+	tok := newToken(kind, l.r)
 	l.readRune()
 	return tok
 }

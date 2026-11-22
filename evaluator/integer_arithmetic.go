@@ -61,3 +61,12 @@ func evalIntegerNegate(value int64) object.Object {
 	}
 	return &object.Integer{Value: -value}
 }
+
+// Remainders follow division truncated toward zero, so a nonzero result has
+// the dividend's sign. Go also defines MinInt64 % -1 as zero without overflow.
+func evalIntegerModulo(left, right int64) object.Object {
+	if right == 0 {
+		return newError("modulo by zero")
+	}
+	return &object.Integer{Value: left % right}
+}

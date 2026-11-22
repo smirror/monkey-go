@@ -223,16 +223,29 @@ func evalIntegerInfixExpression(operator string, left, right object.Object) obje
 		return evalIntegerMultiply(leftVal, rightVal)
 	case "/":
 		return evalIntegerDivide(leftVal, rightVal)
-	case "<":
-		return nativeBoolToBooleanObject(leftVal < rightVal)
-	case ">":
-		return nativeBoolToBooleanObject(leftVal > rightVal)
-	case "==":
-		return nativeBoolToBooleanObject(leftVal == rightVal)
-	case "!=":
-		return nativeBoolToBooleanObject(leftVal != rightVal)
+	case "%":
+		return evalIntegerModulo(leftVal, rightVal)
 	default:
-		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+		return evalIntegerComparison(operator, leftVal, rightVal)
+	}
+}
+
+func evalIntegerComparison(operator string, left, right int64) object.Object {
+	switch operator {
+	case "<":
+		return nativeBoolToBooleanObject(left < right)
+	case ">":
+		return nativeBoolToBooleanObject(left > right)
+	case "<=":
+		return nativeBoolToBooleanObject(left <= right)
+	case ">=":
+		return nativeBoolToBooleanObject(left >= right)
+	case "==":
+		return nativeBoolToBooleanObject(left == right)
+	case "!=":
+		return nativeBoolToBooleanObject(left != right)
+	default:
+		return newError("unknown operator: %s %s %s", object.INTEGER_OBJ, operator, object.INTEGER_OBJ)
 	}
 }
 
