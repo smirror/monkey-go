@@ -38,6 +38,18 @@ func (p *Parser) parseForInStatement(forToken token.Token) ast.Statement {
 	}
 }
 
+// A while condition is an ordinary expression; parentheses are optional.
+func (p *Parser) parseWhileStatement() ast.Statement {
+	stmt := &ast.WhileStatement{Token: p.curToken}
+	p.nextToken()
+	stmt.Condition = p.parseExpression(LOWEST)
+	if stmt.Condition == nil || !p.expectPeek(token.LBRACE) {
+		return nil
+	}
+	stmt.Body = p.parseLoopBody()
+	return stmt
+}
+
 func (p *Parser) parseLoopBody() *ast.BlockStatement {
 	p.loopDepth++
 	defer func() { p.loopDepth-- }()

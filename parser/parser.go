@@ -167,6 +167,8 @@ func (p *Parser) parseStatementNode() ast.Statement {
 		return p.parseReturnStatement()
 	case token.FOR:
 		return p.parseForStatement()
+	case token.WHILE:
+		return p.parseWhileStatement()
 	case token.BREAK, token.CONTINUE:
 		return p.parseLoopControlStatement()
 	default:

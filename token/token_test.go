@@ -45,6 +45,7 @@ func TestTokenTypeUniqueness(t *testing.T) {
 		{"RETURN", RETURN},
 		{"FOR", FOR},
 		{"IN", IN},
+		{"WHILE", WHILE},
 		{"BREAK", BREAK},
 		{"CONTINUE", CONTINUE},
 	}

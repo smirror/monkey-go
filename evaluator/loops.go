@@ -46,6 +46,24 @@ func evalForInStatement(stmt *ast.ForInStatement, outer *object.Environment) obj
 	}
 }
 
+// Each condition uses the outer scope. The body reuses a loop-local scope,
+// matching for-in, so body declarations cannot shadow names in the condition.
+func evalWhileStatement(stmt *ast.WhileStatement, outer *object.Environment) object.Object {
+	env := object.NewEnclosedEnvironment(outer)
+	for {
+		condition := eval(stmt.Condition, outer)
+		if isEvaluationExit(condition) {
+			return condition
+		}
+		if !isTruthy(condition) {
+			return NULL
+		}
+		if result, exit := evalLoopBody(stmt.Body, env); exit {
+			return result
+		}
+	}
+}
+
 // A continue finishes the current body; a break finishes this loop. A return
 // or error propagates unchanged, while the loop ignores ordinary body values.
 func evalLoopBody(body *ast.BlockStatement, env *object.Environment) (object.Object, bool) {
