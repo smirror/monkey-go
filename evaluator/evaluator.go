@@ -204,18 +204,35 @@ func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 
 func evalInfixExpression(operator string, left, right object.Object) object.Object {
 	switch {
+	case operator == "==":
+		return nativeBoolToBooleanObject(objectsEqual(left, right))
+	case operator == "!=":
+		return nativeBoolToBooleanObject(!objectsEqual(left, right))
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(operator, left, right)
 	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
 		return evalStringInfixExpression(operator, left, right)
-	case operator == "==":
-		return nativeBoolToBooleanObject(left == right)
-	case operator == "!=":
-		return nativeBoolToBooleanObject(left != right)
 	case left.Type() != right.Type():
 		return newError("type mismatch: %s %s %s", left.Type(), operator, right.Type())
 	default:
 		return newError("unknown operator: %s %s %s", left.Type(), operator, right.Type())
+	}
+}
+
+func objectsEqual(left, right object.Object) bool {
+	if left.Type() != right.Type() {
+		return false
+	}
+	switch left := left.(type) {
+	case *object.Integer:
+		return left.Value == right.(*object.Integer).Value
+	case *object.Boolean:
+		return left.Value == right.(*object.Boolean).Value
+	case *object.String:
+		return left.Value == right.(*object.String).Value
+	default:
+		// Reference values and the legacy NULL singleton retain identity comparison.
+		return left == right
 	}
 }
 
@@ -249,10 +266,6 @@ func evalIntegerComparison(operator string, left, right int64) object.Object {
 		return nativeBoolToBooleanObject(left <= right)
 	case ">=":
 		return nativeBoolToBooleanObject(left >= right)
-	case "==":
-		return nativeBoolToBooleanObject(left == right)
-	case "!=":
-		return nativeBoolToBooleanObject(left != right)
 	default:
 		return newError("unknown operator: %s %s %s", object.INTEGER_OBJ, operator, object.INTEGER_OBJ)
 	}
