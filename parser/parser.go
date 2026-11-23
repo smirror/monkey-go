@@ -334,7 +334,7 @@ func (p *Parser) parseInfixExpressionWithPrecedence(left ast.Expression, precede
 	}
 	return &ast.InfixExpression{
 		Token:    operator,
-		Operator: string(operator.Type), // Normalize aliases while keeping the source token.
+		Operator: operator.Literal,
 		Left:     left,
 		Right:    right,
 	}

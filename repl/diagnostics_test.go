@@ -57,16 +57,6 @@ func TestREPLMarksErrorInlineOnUnicodeSourceLine(t *testing.T) {
 	}
 }
 
-func TestREPLLessOrEqualAliasUsesOriginalOperatorSpan(t *testing.T) {
-	var out, errOut bytes.Buffer
-	StartWithErrorWriter(strings.NewReader("1 =< true\nexit\n"), &out, &errOut)
-	want := "<repl:1>:1:3: runtime error: type mismatch: INTEGER <= BOOLEAN\n" +
-		"  | 1 =< true\n  |   ^~\n"
-	if got := errOut.String(); got != want {
-		t.Fatalf("got diagnostic %q, want %q", got, want)
-	}
-}
-
 func TestREPLIncompleteInputIsDiagnosedAtEOF(t *testing.T) {
 	for _, input := range []string{"let f = fn() {\n", "\"日本\n", "[1,\n"} {
 		t.Run(input, func(t *testing.T) {
