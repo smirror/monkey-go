@@ -55,8 +55,11 @@ a + b  // 13
 a - b  // 7
 a * b  // 30
 a / b  // 3
+a % b  // 1
 a < b  // false
+a <= b // false
 a > b  // true
+a >= b // true
 a == b // false
 a != b // true
 ```
@@ -65,6 +68,36 @@ Integer arithmetic uses signed 64-bit values. Division by zero and overflow
 (in addition, subtraction, multiplication, division, or unary minus) return
 a Monkey runtime error rather than panicking or silently wrapping. Division
 truncates toward zero.
+
+`%` computes an integer remainder using the same truncation rule as division.
+A nonzero remainder has the left operand's sign: `-5 % 3` is `-2`, while
+`5 % -3` is `2`. A zero divisor returns `modulo by zero`. The remainder of
+`MinInt64 % -1` is safely `0`, even though `MinInt64 / -1` returns an overflow
+error. These remainder rules follow the [Go integer operator specification](https://go.dev/ref/spec#Integer_operators).
+
+`<`, `<=`, `>`, `>=`, and `%` require integer operands; strings, booleans, and
+other types are rejected. Comparisons return a Boolean. Comparisons are binary:
+write `a <= b && b <= c` to check a range, rather than chaining `a <= b <= c`.
+
+### Operator Precedence
+
+Binary operators are listed from highest to lowest precedence. Operators on
+the same row associate left to right, except assignment, which associates
+right to left. Function calls, indexing, and unary operators bind more tightly
+than these binary operators; parentheses can override the grouping.
+
+| Operators | Meaning |
+|-----------|---------|
+| `*`, `/`, `%` | Multiplication, division, remainder |
+| `+`, `-` | Addition, subtraction |
+| `<`, `<=`, `>`, `>=` | Ordered comparisons |
+| `==`, `!=` | Equality comparisons |
+| `&&` | Logical AND |
+| `\|\|` | Logical OR |
+| `=` | Assignment |
+
+For example, `20 % 6 * 3` evaluates to `6`, and `1 + 2 <= 7 % 4` evaluates
+to `true`.
 
 ### Booleans
 
@@ -295,8 +328,8 @@ standard library and justify any future external module by a concrete need.
 - [ ] Block comments (`/* */`)
 - [ ] Float type
 - [x] Logical operators (`&&`, `||`)
-- [ ] Comparison operators (`<=`, `>=`)
-- [ ] Modulo operator (`%`)
+- [x] Comparison operators (`<=`, `>=`)
+- [x] Modulo operator (`%`)
 - [x] `for-in` loops
 - [ ] `while` loops + `break` / `continue`
 - [x] Variable reassignment (`x = 10`)
