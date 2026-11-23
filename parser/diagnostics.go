@@ -3,15 +3,13 @@ package parser
 import (
 	"fmt"
 	"monkey-go/ast"
+	"monkey-go/diagnostic"
 	"monkey-go/token"
 	"strings"
 )
 
 // Diagnostic is a syntax error paired with its source snapshot and range.
-type Diagnostic struct {
-	Message string
-	Span    token.Span
-}
+type Diagnostic = diagnostic.Diagnostic
 
 // Diagnostics supplements Errors without changing its message-only API.
 func (p *Parser) Diagnostics() []Diagnostic {
@@ -20,7 +18,7 @@ func (p *Parser) Diagnostics() []Diagnostic {
 
 func (p *Parser) addError(message string, tok token.Token) {
 	p.errors = append(p.errors, message)
-	p.diagnostics = append(p.diagnostics, Diagnostic{Message: message, Span: tok.Span})
+	p.diagnostics = append(p.diagnostics, Diagnostic{Kind: diagnostic.Syntax, Message: message, Span: tok.Span})
 }
 
 func (p *Parser) addLexicalError(tok token.Token) {

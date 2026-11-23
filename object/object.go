@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"hash/fnv"
 	"monkey-go/ast"
+	"monkey-go/diagnostic"
+	"monkey-go/token"
 	"strings"
 )
 
@@ -71,11 +73,21 @@ func (rv *ReturnValue) Type() ObjectType { return RETURN_VALUE_OBJ }
 func (rv *ReturnValue) Inspect() string  { return rv.Value.Inspect() }
 
 type Error struct {
+	Kind    diagnostic.Kind
 	Message string
+	Span    token.Span
+	Stack   []diagnostic.Frame
 }
 
 func (e *Error) Type() ObjectType { return ERROR_OBJ }
 func (e *Error) Inspect() string  { return "ERROR: " + e.Message }
+
+func (e *Error) Diagnostic() diagnostic.Diagnostic {
+	return diagnostic.Diagnostic{
+		Kind: e.Kind, Message: e.Message, Span: e.Span,
+		Stack: append([]diagnostic.Frame(nil), e.Stack...),
+	}
+}
 
 type Function struct {
 	Parameters []*ast.Identifier

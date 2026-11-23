@@ -7,34 +7,35 @@ import (
 )
 
 // Read one complete REPL input, including optional multiline constructs.
-func nextREPLSource(scanner *bufio.Scanner, out io.Writer, input *strings.Builder) (string, bool) {
+func nextREPLSource(scanner *bufio.Scanner, out io.Writer, input *strings.Builder) (string, bool, error) {
 	prompt := PROMPT
 	if input.Len() > 0 {
 		prompt = CONTINUATION_PROMPT
 	}
 	if _, err := io.WriteString(out, prompt); err != nil {
-		return "", true
+		return "", true, err
 	}
 
 	if !scanner.Scan() {
-		if input.Len() > 0 {
-			_, _ = io.WriteString(out, "incomplete input\n")
+		if err := scanner.Err(); err != nil {
+			return "", true, err
 		}
-		return "", true
+		// Let the parser diagnose unfinished input at EOF with a source span.
+		return input.String(), true, nil
 	}
 	line := scanner.Text()
 	if input.Len() == 0 && strings.EqualFold(strings.TrimSpace(line), "exit") {
-		return "", true
+		return "", true, nil
 	}
 	input.WriteString(line)
 	input.WriteByte('\n')
 	if needsMoreInput(input.String()) {
-		return "", false
+		return "", false, nil
 	}
 
 	source := input.String()
 	input.Reset()
-	return source, false
+	return source, false, nil
 }
 
 // Keep reading when an unclosed delimiter requires another input line.
@@ -64,7 +65,7 @@ type inputBalance struct {
 // consume returns true when it consumed both bytes of a // comment marker.
 func (b *inputBalance) consume(ch, next byte) bool {
 	if b.lineComment {
-		b.lineComment = ch != '\n'
+		b.lineComment = ch != '\n' && ch != '\r'
 		return false
 	}
 	if b.inString {
