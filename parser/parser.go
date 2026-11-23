@@ -52,6 +52,7 @@ type Parser struct {
 
 	errors      []string
 	diagnostics []Diagnostic
+	loopDepth   int
 
 	curToken  token.Token
 	peekToken token.Token
@@ -166,6 +167,8 @@ func (p *Parser) parseStatementNode() ast.Statement {
 		return p.parseReturnStatement()
 	case token.FOR:
 		return p.parseForStatement()
+	case token.BREAK, token.CONTINUE:
+		return p.parseLoopControlStatement()
 	default:
 		return p.parseExpressionStatement()
 	}
@@ -434,7 +437,10 @@ func (p *Parser) parseFunctionExpression() ast.Expression {
 		return nil
 	}
 
+	enclosingLoopDepth := p.loopDepth
+	p.loopDepth = 0
 	lit.Body = p.parseBlockStatement()
+	p.loopDepth = enclosingLoopDepth
 
 	return lit
 }
@@ -447,14 +453,17 @@ func (p *Parser) parseFunctionParameters() []*ast.Identifier {
 		return identifiers
 	}
 
-	p.nextToken()
-
+	if !p.expectPeek(token.IDENT) {
+		return nil
+	}
 	ident := identifier(p.curToken)
 	identifiers = append(identifiers, ident)
 
 	for p.peekTokenIs(token.COMMA) {
 		p.nextToken()
-		p.nextToken()
+		if !p.expectPeek(token.IDENT) {
+			return nil
+		}
 		ident := identifier(p.curToken)
 		identifiers = append(identifiers, ident)
 	}

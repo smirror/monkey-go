@@ -3,13 +3,24 @@ package evaluator
 import (
 	"monkey-go/ast"
 	"monkey-go/object"
+	"monkey-go/token"
 )
+
+// Loop control is internal to evaluation and is consumed by the closest loop.
+// Public Eval and function calls reject signals that reach their boundary.
+type loopControl struct {
+	keyword string
+	span    token.Span
+}
+
+func (c *loopControl) Type() object.ObjectType { return "LOOP_CONTROL" }
+func (c *loopControl) Inspect() string         { return c.keyword }
 
 // The iterable is evaluated once in the outer scope, before the loop variable
 // shadows any identifier with the same name.
 func evalForInStatement(stmt *ast.ForInStatement, outer *object.Environment) object.Object {
-	value := Eval(stmt.Iterable, outer)
-	if isError(value) {
+	value := eval(stmt.Iterable, outer)
+	if isEvaluationExit(value) {
 		return value
 	}
 	if value == nil {
@@ -28,11 +39,28 @@ func evalForInStatement(stmt *ast.ForInStatement, outer *object.Environment) obj
 			return NULL
 		}
 		env.Set(stmt.Variable.Value, element)
-		result := Eval(stmt.Body, env)
-		if isLoopExit(result) {
+		result, exit := evalLoopBody(stmt.Body, env)
+		if exit {
 			return result
 		}
 	}
+}
+
+// A continue finishes the current body; a break finishes this loop. A return
+// or error propagates unchanged, while the loop ignores ordinary body values.
+func evalLoopBody(body *ast.BlockStatement, env *object.Environment) (object.Object, bool) {
+	result := eval(body, env)
+	if control, ok := result.(*loopControl); ok {
+		return NULL, control.keyword == "break"
+	}
+	return result, isLoopExit(result)
+}
+
+func isEvaluationExit(value object.Object) bool {
+	if _, ok := value.(*loopControl); ok {
+		return true
+	}
+	return isLoopExit(value)
 }
 
 func isLoopExit(value object.Object) bool {

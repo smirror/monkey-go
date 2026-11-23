@@ -45,6 +45,8 @@ func TestTokenTypeUniqueness(t *testing.T) {
 		{"RETURN", RETURN},
 		{"FOR", FOR},
 		{"IN", IN},
+		{"BREAK", BREAK},
+		{"CONTINUE", CONTINUE},
 	}
 
 	seen := make(map[TokenType]string)

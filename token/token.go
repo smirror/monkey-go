@@ -59,18 +59,22 @@ const (
 	RETURN   = "RETURN"
 	FOR      = "FOR"
 	IN       = "IN"
+	BREAK    = "BREAK"
+	CONTINUE = "CONTINUE"
 )
 
 var keyword = map[string]TokenType{
-	"fn":     FUNCTION,
-	"let":    LET,
-	"true":   TRUE,
-	"false":  FALSE,
-	"if":     IF,
-	"else":   ELSE,
-	"return": RETURN,
-	"for":    FOR,
-	"in":     IN,
+	"fn":       FUNCTION,
+	"let":      LET,
+	"true":     TRUE,
+	"false":    FALSE,
+	"if":       IF,
+	"else":     ELSE,
+	"return":   RETURN,
+	"for":      FOR,
+	"in":       IN,
+	"break":    BREAK,
+	"continue": CONTINUE,
 }
 
 func LookupIdent(ident string) TokenType {

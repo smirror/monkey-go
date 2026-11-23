@@ -162,8 +162,33 @@ lazy and do not allocate an array.
 The loop variable belongs to a loop-local scope, so an outer variable
 with the same name is not overwritten. Assignments to other variables
 in outer scopes still work. A loop produces `null`; `return` and
-errors propagate immediately. C-style three-clause `for`, `++`,
-`break`, `continue`, and `while` are not supported.
+errors propagate immediately. C-style three-clause `for`, `++`, and
+`while` are not supported.
+
+`break` exits the innermost loop, while `continue` skips the rest of its body
+and starts the next iteration. They work in nested `if` blocks as well:
+
+```monkey
+let total = 0;
+for i in range(1, 8) {
+    if (i == 2) { continue; }
+    if (i == 5) { break; }
+    total = total + i;
+}
+total // 8: 1 + 3 + 4
+```
+
+Loop control applies only within the current function. A function declared or
+called inside a loop cannot use `break` or `continue` to affect its caller's
+loop; it may use them in a loop of its own. Use outside a loop is a syntax
+error, including code in a nested function. The evaluator also rejects invalid
+control in ASTs supplied directly by a host, preserving its source location.
+
+`break` and `continue` take no value or label. The trailing semicolon may be
+omitted before a newline, a closing brace, or EOF. A control statement stops
+evaluation immediately, including when it occurs inside an `if` expression
+used as an argument or assignment value. `return` and errors still propagate
+through loops without being consumed.
 
 Single-line `//` comments are supported; `/* ... */` comments are not.
 
@@ -331,7 +356,8 @@ standard library and justify any future external module by a concrete need.
 - [x] Comparison operators (`<=`, `>=`)
 - [x] Modulo operator (`%`)
 - [x] `for-in` loops
-- [ ] `while` loops + `break` / `continue`
+- [x] `break` / `continue` within loops
+- [ ] `while` loops
 - [x] Variable reassignment (`x = 10`)
 - [ ] `type()` function
 
