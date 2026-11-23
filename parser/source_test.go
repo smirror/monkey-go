@@ -2,8 +2,10 @@ package parser
 
 import (
 	"monkey-go/ast"
+	"monkey-go/diagnostic"
 	"monkey-go/lexer"
 	"monkey-go/token"
+	"reflect"
 	"testing"
 	"unicode/utf8"
 )
@@ -42,10 +44,11 @@ func checkDiagnostic(t *testing.T, tt diagnosticCase) {
 	}
 	first := diagnostics[0]
 	expected := Diagnostic{
+		Kind:    diagnostic.Syntax,
 		Message: tt.message,
 		Span:    token.Span{Source: first.Span.Source, Start: tt.start, End: tt.end},
 	}
-	if first != expected {
+	if !reflect.DeepEqual(first, expected) {
 		t.Fatalf("diagnostic = %+v, want %+v", first, expected)
 	}
 	checkDiagnosticSource(t, first.Span.Source, tt.input)

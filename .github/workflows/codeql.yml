@@ -10,7 +10,6 @@ on:
       - '.gitattributes'
       - '.github/**/*'
   pull_request:
-    branches: [ "main" ]
     paths-ignore:
       - 'README.md'
       - '.gitignore'
