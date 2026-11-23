@@ -253,6 +253,29 @@ func (fs *ForInStatement) String() string {
 	return out.String()
 }
 
+type WhileStatement struct {
+	SourceLocation
+	Token     token.Token // while
+	Condition Expression
+	Body      *BlockStatement
+}
+
+func (ws *WhileStatement) statementNode()       {}
+func (ws *WhileStatement) TokenLiteral() string { return ws.Token.Literal }
+func (ws *WhileStatement) String() string {
+	var out bytes.Buffer
+	out.WriteString("while ")
+	if ws.Condition != nil {
+		out.WriteString(ws.Condition.String())
+	}
+	out.WriteString(" {")
+	if ws.Body != nil {
+		out.WriteString(ws.Body.String())
+	}
+	out.WriteString("}")
+	return out.String()
+}
+
 type BlockStatement struct {
 	SourceLocation
 	Token      token.Token

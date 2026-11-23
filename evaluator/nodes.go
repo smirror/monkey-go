@@ -22,6 +22,8 @@ func evalControlStatement(node ast.Statement, env *object.Environment) object.Ob
 	switch node := node.(type) {
 	case *ast.ForInStatement:
 		return evalForInStatement(node, env)
+	case *ast.WhileStatement:
+		return evalWhileStatement(node, env)
 	case *ast.ReturnStatement:
 		return evalReturnStatement(node, env)
 	case *ast.BreakStatement:

@@ -30,3 +30,21 @@ func TestForInNodeString(t *testing.T) {
 		})
 	}
 }
+
+func TestWhileNodeString(t *testing.T) {
+	for _, tt := range []struct{ input, want string }{
+		{"while ready {}", "while ready {}"},
+		{"while (n < 3) { n = n + 1; }", "while (n < 3) {(n = (n + 1))}"},
+		{"while true { break; }", "while true {break;}"},
+		{"while false { continue; }", "while false {continue;}"},
+	} {
+		p := parser.New(lexer.New(tt.input))
+		program := p.ParseProgram()
+		if len(p.Errors()) != 0 {
+			t.Fatalf("parser errors: %v", p.Errors())
+		}
+		if got := program.String(); got != tt.want {
+			t.Errorf("got %q, want %q", got, tt.want)
+		}
+	}
+}

@@ -27,7 +27,7 @@ Feel free to type in commands
 >>
 ```
 
-Type `exit` to quit. Multi-line `for`, `if`, and function bodies are supported;
+Type `exit` to quit. Multi-line `for`, `while`, `if`, and function bodies are supported;
 the REPL uses a `.. ` continuation prompt until the delimiters close.
 
 ### Run tests
@@ -162,8 +162,44 @@ lazy and do not allocate an array.
 The loop variable belongs to a loop-local scope, so an outer variable
 with the same name is not overwritten. Assignments to other variables
 in outer scopes still work. A loop produces `null`; `return` and
-errors propagate immediately. C-style three-clause `for`, `++`, and
-`while` are not supported.
+errors propagate immediately. C-style three-clause `for` and `++` are not
+supported.
+
+### While Loops
+
+Use `while condition { ... }` to repeat a body while its condition is true.
+The condition is an ordinary expression; parentheses such as `while (n < 3)`
+are also accepted. The body must be enclosed in `{}`.
+
+```monkey
+let n = 0;
+let total = 0;
+while n < 5 {
+    n = n + 1;
+    if (n == 2) { continue; }
+    total = total + n;
+}
+total // 13: 1 + 3 + 4 + 5
+```
+
+The condition is evaluated before the first iteration and again before each
+later iteration, including after `continue`. A false initial condition skips
+the body. `break` exits without another condition evaluation. Conditions use
+the same truthiness as `if`: `false` and the existing null value are false;
+other values, including `0`, empty strings, and empty arrays, are true.
+
+Each condition is evaluated in the surrounding scope. The body uses a separate
+loop-local child scope, created once and reused across iterations, just as in
+`for`. A `let` inside the body stays in that child scope: later body executions
+can see it, but the condition and code after the loop cannot. Assignment to an
+existing outer variable updates it, so `n = n + 1` in the example changes the
+next condition. A body-local `let n = ...` would shadow the outer `n` instead.
+
+`while` and `for` can nest in either order. A completed `while` has the same
+result as `for`; body expression values are discarded, and `return` or errors
+propagate immediately from either the condition or the body.
+
+### Loop Control
 
 `break` exits the innermost loop, while `continue` skips the rest of its body
 and starts the next iteration. They work in nested `if` blocks as well:
@@ -189,6 +225,11 @@ omitted before a newline, a closing brace, or EOF. A control statement stops
 evaluation immediately, including when it occurs inside an `if` expression
 used as an argument or assignment value. `return` and errors still propagate
 through loops without being consumed.
+
+A loop's control context covers its body. Its iterable (`for`) or condition
+(`while`) is outside that context. If such an expression contains control
+inside an `if` block, that control belongs to an enclosing loop body, if any;
+otherwise it is a syntax error.
 
 Single-line `//` comments are supported; `/* ... */` comments are not.
 
@@ -344,6 +385,7 @@ standard library and justify any future external module by a concrete need.
 ## Feature
 - [x] Unicode support
 - [x] for-in loops
+- [x] while loops
 - [x] logical operators
 
 ## Roadmap
@@ -357,7 +399,7 @@ standard library and justify any future external module by a concrete need.
 - [x] Modulo operator (`%`)
 - [x] `for-in` loops
 - [x] `break` / `continue` within loops
-- [ ] `while` loops
+- [x] `while` loops
 - [x] Variable reassignment (`x = 10`)
 - [ ] `type()` function
 
