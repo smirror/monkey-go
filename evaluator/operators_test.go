@@ -45,6 +45,9 @@ func TestIntegerInclusiveComparisons(t *testing.T) {
 		{"1 <= 2", true},
 		{"2 <= 2", true},
 		{"3 <= 2", false},
+		{"1 =< 2", true},
+		{"2 =< 2", true},
+		{"3 =< 2", false},
 		{"1 >= 2", false},
 		{"2 >= 2", true},
 		{"3 >= 2", true},
@@ -52,6 +55,8 @@ func TestIntegerInclusiveComparisons(t *testing.T) {
 		{"-3 >= -5", true},
 		{maxInt64Expression + " >= " + minInt64Expression, true},
 		{minInt64Expression + " <= " + maxInt64Expression, true},
+		{minInt64Expression + " =< " + maxInt64Expression, true},
+		{maxInt64Expression + " =< " + minInt64Expression, false},
 		{minInt64Expression + " >= " + minInt64Expression, true},
 		{maxInt64Expression + " <= " + maxInt64Expression, true},
 		{maxInt64Expression + " <= " + minInt64Expression, false},
@@ -79,6 +84,7 @@ func TestModuloAssociativityAndOperandEvaluation(t *testing.T) {
 		{"2 + 3 % 2", 3},
 		{"let n = 0; let next = fn() { n = n + 1; n; }; let r = next() % next(); n * 10 + r;", 21},
 		{"let n = 0; let next = fn() { n = n + 1; n; }; let r = next() <= next(); if (r) { n } else { 99 }", 2},
+		{"let n = 0; let next = fn() { n = n + 1; n; }; let r = next() =< next(); if (r) { n } else { 99 }", 2},
 		{"let n = 0; let next = fn() { n = n + 1; n; }; let r = next() >= next(); if (r) { 99 } else { n }", 2},
 	}
 	for _, tt := range tests {
@@ -140,6 +146,7 @@ func TestModuloAndComparisonErrors(t *testing.T) {
 		{"\"a\" <= \"b\"", "unknown operator: STRING <= STRING"},
 		{"\"a\" >= \"b\"", "unknown operator: STRING >= STRING"},
 		{"1 <= true", "type mismatch: INTEGER <= BOOLEAN"},
+		{"1 =< true", "type mismatch: INTEGER <= BOOLEAN"},
 		{"false >= 1", "type mismatch: BOOLEAN >= INTEGER"},
 		{"1 <= 2 <= 3", "type mismatch: BOOLEAN <= INTEGER"},
 	}

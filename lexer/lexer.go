@@ -104,6 +104,10 @@ func (l *Lexer) readToken() token.Token {
 		return token.Token{Type: token.EOF}
 	}
 	if operator, ok := twoCharacterTokens[l.r]; ok {
+		if l.r == '=' && l.peekRune() == '<' {
+			operator.second = '<'
+			operator.matched = token.LTE
+		}
 		tok := l.makeTwoCharToken(operator.second, operator.matched, operator.fallback)
 		l.readRune()
 		return tok

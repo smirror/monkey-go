@@ -58,6 +58,7 @@ a / b  // 3
 a % b  // 1
 a < b  // false
 a <= b // false
+a =< b // false (alias of <=)
 a > b  // true
 a >= b // true
 a == b // false
@@ -79,6 +80,9 @@ error. These remainder rules follow the [Go integer operator specification](http
 other types are rejected. Comparisons return a Boolean. Comparisons are binary:
 write `a <= b && b <= c` to check a range, rather than chaining `a <= b <= c`.
 
+`=<` is an alias for `<=`, with the same precedence, result, and errors.
+The two characters must be adjacent, as in `1 =< 2` or `1=<2`.
+
 ### Operator Precedence
 
 Binary operators are listed from highest to lowest precedence. Operators on
@@ -90,7 +94,7 @@ than these binary operators; parentheses can override the grouping.
 |-----------|---------|
 | `*`, `/`, `%` | Multiplication, division, remainder |
 | `+`, `-` | Addition, subtraction |
-| `<`, `<=`, `>`, `>=` | Ordered comparisons |
+| `<`, `<=` (or `=<`), `>`, `>=` | Ordered comparisons |
 | `==`, `!=` | Equality comparisons |
 | `&&` | Logical AND |
 | `\|\|` | Logical OR |
