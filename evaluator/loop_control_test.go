@@ -172,7 +172,13 @@ func handBuiltControl(keyword string) ast.Statement {
 
 func checkControlBoundaryError(t *testing.T, err *object.Error, keyword string, span token.Span) {
 	t.Helper()
-	if err.Kind != diagnostic.Runtime || err.Message != keyword+" outside loop" || err.Span != span {
-		t.Fatalf("invalid control escaped or lost its source: %+v", err)
+	if err.Kind != diagnostic.Runtime {
+		t.Errorf("control error kind = %q, want %q", err.Kind, diagnostic.Runtime)
+	}
+	if want := keyword + " outside loop"; err.Message != want {
+		t.Errorf("control error message = %q, want %q", err.Message, want)
+	}
+	if err.Span != span {
+		t.Errorf("control error span = %+v, want %+v", err.Span, span)
 	}
 }

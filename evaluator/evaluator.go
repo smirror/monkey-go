@@ -33,69 +33,13 @@ func eval(node ast.Node, env *object.Environment) object.Object {
 
 func evalNode(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
-	// Statements
 	case *ast.Program:
 		return evalProgram(node, env)
-
-	case *ast.BlockStatement:
-		return evalBlockStatement(node, env)
-
-	case *ast.ForInStatement:
-		return evalForInStatement(node, env)
-
-	case *ast.ExpressionStatement:
-		return eval(node.Expression, env)
-
-	case *ast.ReturnStatement:
-		return evalReturnStatement(node, env)
-	case *ast.BreakStatement:
-		return &loopControl{keyword: "break", span: node.Span()}
-	case *ast.ContinueStatement:
-		return &loopControl{keyword: "continue", span: node.Span()}
-
-	// Expressions
-	case *ast.IntegerLiteral:
-		return &object.Integer{Value: node.Value}
-
-	case *ast.Boolean:
-		return nativeBoolToBooleanObject(node.Value)
-
-	case *ast.StringLiteral:
-		return &object.String{Value: node.Value}
-
-	case *ast.PrefixExpression:
-		return evalPrefixExpressionNode(node, env)
-
-	case *ast.InfixExpression:
-		return evalInfixExpressionNode(node, env)
-
-	case *ast.IfExpression:
-		return evalIfExpression(node, env)
-
-	case *ast.Identifier:
-		return evalIdentifier(node, env)
-
-	case *ast.LetStatement:
-		return evalLetStatement(node, env)
-
-	case *ast.FunctionLiteral:
-		params := node.Parameters
-		body := node.Body
-		return &object.Function{Parameters: params, Env: env, Body: body}
-
-	case *ast.CallExpression:
-		return evalCallExpression(node, env)
-
-	case *ast.ArrayLiteral:
-		return evalArrayLiteral(node, env)
-
-	case *ast.IndexExpression:
-		return evalIndexExpressionNode(node, env)
-
-	case *ast.HashMapLiteral:
-		return evalHashMapLiteral(node, env)
+	case ast.Statement:
+		return evalStatement(node, env)
+	case ast.Expression:
+		return evalExpression(node, env)
 	}
-
 	return nil
 }
 

@@ -4,6 +4,7 @@ import (
 	"monkey-go/ast"
 	"monkey-go/diagnostic"
 	"monkey-go/lexer"
+	"monkey-go/token"
 	"strings"
 	"testing"
 )
@@ -12,21 +13,25 @@ func TestLoopControlStatementsHaveCompleteSpans(t *testing.T) {
 	for _, keyword := range []string{"break", "continue"} {
 		t.Run(keyword, func(t *testing.T) {
 			source := "for i in range(2) {\n  " + keyword + ";\n}"
-			p := New(lexer.NewWithFilename("loops.mk", source))
-			program := p.ParseProgram()
-			if len(p.Errors()) != 0 {
-				t.Fatalf("unexpected parse errors: %v", p.Errors())
-			}
+			program := parseLocatedProgram(t, source)
 			statement := program.Statements[0].(*ast.ForInStatement).Body.Statements[0]
-			if statement.TokenLiteral() != keyword || statement.String() != keyword+";" {
+			wantSyntax := [2]string{keyword, keyword + ";"}
+			if got := [2]string{statement.TokenLiteral(), statement.String()}; got != wantSyntax {
 				t.Fatalf("incorrect loop control AST: %T %q", statement, statement.String())
 			}
 			span := statement.Span()
-			if span.Source.Name != "loops.mk" || span.Start.Line != 2 || span.Start.Column != 3 {
-				t.Fatalf("incorrect statement location: %+v", span)
+			checkSpanText(t, span, keyword+";")
+			wantSource := token.Source{Name: "source.mk", Text: source}
+			if *span.Source != wantSource {
+				t.Fatalf("statement source = %+v, want %+v", *span.Source, wantSource)
 			}
-			if got := source[span.Start.Offset:span.End.Offset]; got != keyword+";" {
-				t.Fatalf("statement span covers %q, want %q", got, keyword+";")
+			start := strings.Index(source, keyword)
+			wantSpan := token.Span{
+				Source: span.Source, Start: position(start, 2, 3),
+				End: position(start+len(keyword)+1, 2, 3+len(keyword)+1),
+			}
+			if span != wantSpan {
+				t.Fatalf("statement span = %+v, want %+v", span, wantSpan)
 			}
 		})
 	}

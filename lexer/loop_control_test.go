@@ -6,27 +6,13 @@ import (
 )
 
 func TestLoopControlKeywordsAndSourceSpans(t *testing.T) {
-	l := NewWithFilename("loops.mk", "\"日本\"\nbreak continue breakfast continued")
-	_ = l.NextToken()
-	for _, want := range []struct {
-		kind           token.TokenType
-		literal        string
-		offset, column int
-	}{
-		{token.BREAK, "break", 9, 1},
-		{token.CONTINUE, "continue", 15, 7},
-	} {
-		got := l.NextToken()
-		if got.Type != want.kind || got.Literal != want.literal {
-			t.Fatalf("got %+v, want %s %q", got, want.kind, want.literal)
-		}
-		if got.Span.Start.Line != 2 || got.Span.Start.Offset != want.offset || got.Span.Start.Column != want.column {
-			t.Fatalf("incorrect keyword source span: %+v", got.Span)
-		}
-	}
-	for _, word := range []string{"breakfast", "continued"} {
-		if got := l.NextToken(); got.Type != token.IDENT || got.Literal != word {
-			t.Fatalf("keyword prefix changed identifier %q into %+v", word, got)
-		}
-	}
+	input := "\"日本\"\nbreak continue breakfast continued"
+	checkLocatedTokens(t, input, []locatedToken{
+		{token.STRING, "日本", pos(0, 1, 1), pos(8, 1, 5)},
+		{token.BREAK, "break", pos(9, 2, 1), pos(14, 2, 6)},
+		{token.CONTINUE, "continue", pos(15, 2, 7), pos(23, 2, 15)},
+		{token.IDENT, "breakfast", pos(24, 2, 16), pos(33, 2, 25)},
+		{token.IDENT, "continued", pos(34, 2, 26), pos(43, 2, 35)},
+		{token.EOF, "", pos(43, 2, 35), pos(43, 2, 35)},
+	})
 }
