@@ -5,11 +5,13 @@ import (
 	"testing"
 )
 
+type equalityCase struct {
+	name, setup, left, right string
+	equal                    bool
+}
+
 func TestEqualityValuesAndReferences(t *testing.T) {
-	tests := []struct {
-		name, setup, left, right string
-		equal                    bool
-	}{
+	tests := []equalityCase{
 		{"integer value", "", "1 + 1", "2", true},
 		{"integer difference", "", "1", "2", false},
 		{"integer minimum", "", minInt64Expression, minInt64Expression, true},
@@ -51,20 +53,20 @@ func TestEqualityValuesAndReferences(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			checkEqualityPair(t, tt.setup, tt.left, tt.right, tt.equal)
+			checkEqualityPair(t, tt)
 		})
 	}
 }
 
-func checkEqualityPair(t *testing.T, setup, left, right string, equal bool) {
+func checkEqualityPair(t *testing.T, tt equalityCase) {
 	t.Helper()
-	for _, operands := range [][2]string{{left, right}, {right, left}} {
+	for _, operands := range [][2]string{{tt.left, tt.right}, {tt.right, tt.left}} {
 		lhs, rhs := "("+operands[0]+")", "("+operands[1]+")"
 		t.Run(lhs+" == "+rhs, func(t *testing.T) {
-			testBooleanObject(t, evalOperatorInput(t, setup+lhs+" == "+rhs), equal)
+			testBooleanObject(t, evalOperatorInput(t, tt.setup+lhs+" == "+rhs), tt.equal)
 		})
 		t.Run(lhs+" != "+rhs, func(t *testing.T) {
-			testBooleanObject(t, evalOperatorInput(t, setup+lhs+" != "+rhs), !equal)
+			testBooleanObject(t, evalOperatorInput(t, tt.setup+lhs+" != "+rhs), !tt.equal)
 		})
 	}
 }

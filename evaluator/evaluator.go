@@ -203,15 +203,11 @@ func evalMinusPrefixOperatorExpression(right object.Object) object.Object {
 }
 
 func evalInfixExpression(operator string, left, right object.Object) object.Object {
-	if operator == "==" || operator == "!=" {
-		equal := objectsEqual(left, right)
-		if operator == "!=" {
-			equal = !equal
-		}
-		return nativeBoolToBooleanObject(equal)
-	}
-
 	switch {
+	case operator == "==":
+		return nativeBoolToBooleanObject(objectsEqual(left, right))
+	case operator == "!=":
+		return nativeBoolToBooleanObject(!objectsEqual(left, right))
 	case left.Type() == object.INTEGER_OBJ && right.Type() == object.INTEGER_OBJ:
 		return evalIntegerInfixExpression(operator, left, right)
 	case left.Type() == object.STRING_OBJ && right.Type() == object.STRING_OBJ:
