@@ -125,6 +125,29 @@ let greeting = "こんにちは";
 s + " Goodbye!"  // concatenation
 ```
 
+### Equality
+
+`==` and `!=` return Booleans. Operands are evaluated once, left to right;
+an operand error propagates immediately. `!=` is the negation of `==`.
+
+| Operands | Rule for `==` |
+|----------|---------------|
+| Two integers or two booleans | Compare their values |
+| Two strings | Compare their exact contents, without Unicode normalization or case folding |
+| Different types | `false`, without implicit conversion |
+| Two arrays, hashes, functions, builtins, or ranges | `true` only for the same object; contents are not compared recursively |
+| Legacy internal null values | The same internal null singleton compares equal |
+
+```monkey
+"日" + "本" == "日本"  // true
+1 == "1"             // false
+[1] == [1]           // false
+let a = [1];
+let b = a;
+a == b               // true
+range(3) == range(3)  // false
+```
+
 ### If / Else
 
 ```monkey
@@ -246,6 +269,48 @@ len("こんにちは")  // 5
 print("Hello!", 42, true)
 ```
 
+## Null compatibility and planned types
+
+### Current interpreter behavior
+
+There is no `null` literal or keyword; `null` remains an ordinary identifier.
+The interpreter still returns a legacy internal null value for empty function
+or block bodies, a false `if` without `else`, completed loops, and `print`.
+Out-of-bounds array indexing, missing hash keys, and `first([])`, `last([])`,
+and `rest([])` also return it. `rest([x])` instead returns an empty array.
+Functions with no explicit `return` still return their last evaluated value.
+
+This legacy value can be stored and passed to functions, but cannot be a hash
+key. It compares equal to other internal null results, and unequal to every
+other type. It and `false` are falsey; `0`, empty strings, and empty collections
+are truthy. The REPL displays it as `null`. Runtime errors still propagate
+immediately as diagnostics. These behaviors remain compatible during migration.
+
+### Target design and staged migration
+
+The adopted direction in [#197](https://github.com/smirror/monkey-go/issues/197)
+is non-null ordinary values: `Option<T>` represents absence, `Unit` represents
+no meaningful result, and `Result<T, E>` represents a recoverable failure.
+These types and static checking are **not implemented yet**.
+
+| Current behavior | Target or decision for a follow-up task |
+|------------------|-----------------------------------------|
+| Empty bodies, `print`, completed loops | `Unit`; define its display and use in conditions |
+| Empty `first` / `last`, missing hash keys | `Option<T>` with explicit presence handling |
+| Out-of-bounds indexing | Decide the contract for optional lookup versus an error or `Result` |
+| `if` without `else` | Decide statement/`Unit` behavior versus value-returning expressions that require `else` or return `Option<T>` |
+| `rest([])` | Decide whether it returns an empty array or an explicit absence |
+| Runtime errors | Separate recoverable `Result` values from terminating diagnostics in [#210](https://github.com/smirror/monkey-go/issues/210) |
+
+First, equality and the existing compatibility rules are fixed. Follow-up work
+will introduce the runtime types and explicit handling one step at a time, with
+migration examples and conformance tests for each changed API. A later static
+checking stage must address types, exhaustive branching, and unhandled failures;
+runtime `Option` / `Result` values alone do not prevent handling mistakes before
+execution. The shared specification and conformance suite are tracked in
+[#211](https://github.com/smirror/monkey-go/issues/211) and
+[#212](https://github.com/smirror/monkey-go/issues/212).
+
 ## Source Locations
 
 Tokens and parsed AST nodes retain a `token.Span` with a source name, the original
@@ -346,7 +411,7 @@ standard library and justify any future external module by a concrete need.
 ### Low Priority
 - [ ] switch / case
 - [ ] File I/O
-- [ ] Error handling (try/catch)
+- [ ] Explicit error handling (`Result`; migration tracked in #210)
 - [ ] import / module system
 - [ ] Standard input (`input()`)
 
