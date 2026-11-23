@@ -14,7 +14,16 @@ var (
 	FALSE = &object.Boolean{Value: false}
 )
 
+// Eval is an evaluation boundary: loop control cannot escape to its caller.
 func Eval(node ast.Node, env *object.Environment) object.Object {
+	value := eval(node, env)
+	if control, ok := value.(*loopControl); ok {
+		return withErrorSpan(newError("%s outside loop", control.keyword), control.span)
+	}
+	return value
+}
+
+func eval(node ast.Node, env *object.Environment) object.Object {
 	value := evalNode(node, env)
 	if !isError(value) || node == nil {
 		return value
@@ -24,65 +33,13 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 func evalNode(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
-	// Statements
 	case *ast.Program:
 		return evalProgram(node, env)
-
-	case *ast.BlockStatement:
-		return evalBlockStatement(node, env)
-
-	case *ast.ForInStatement:
-		return evalForInStatement(node, env)
-
-	case *ast.ExpressionStatement:
-		return Eval(node.Expression, env)
-
-	case *ast.ReturnStatement:
-		return evalReturnStatement(node, env)
-
-	// Expressions
-	case *ast.IntegerLiteral:
-		return &object.Integer{Value: node.Value}
-
-	case *ast.Boolean:
-		return nativeBoolToBooleanObject(node.Value)
-
-	case *ast.StringLiteral:
-		return &object.String{Value: node.Value}
-
-	case *ast.PrefixExpression:
-		return evalPrefixExpressionNode(node, env)
-
-	case *ast.InfixExpression:
-		return evalInfixExpressionNode(node, env)
-
-	case *ast.IfExpression:
-		return evalIfExpression(node, env)
-
-	case *ast.Identifier:
-		return evalIdentifier(node, env)
-
-	case *ast.LetStatement:
-		return evalLetStatement(node, env)
-
-	case *ast.FunctionLiteral:
-		params := node.Parameters
-		body := node.Body
-		return &object.Function{Parameters: params, Env: env, Body: body}
-
-	case *ast.CallExpression:
-		return evalCallExpression(node, env)
-
-	case *ast.ArrayLiteral:
-		return evalArrayLiteral(node, env)
-
-	case *ast.IndexExpression:
-		return evalIndexExpressionNode(node, env)
-
-	case *ast.HashMapLiteral:
-		return evalHashMapLiteral(node, env)
+	case ast.Statement:
+		return evalStatement(node, env)
+	case ast.Expression:
+		return evalExpression(node, env)
 	}
-
 	return nil
 }
 
@@ -150,12 +107,14 @@ func evalProgram(program *ast.Program, env *object.Environment) object.Object {
 	var result object.Object
 
 	for _, stmt := range program.Statements {
-		result = Eval(stmt, env)
+		result = eval(stmt, env)
 
 		switch rt := result.(type) {
 		case *object.ReturnValue:
 			return rt.Value
 		case *object.Error:
+			return rt
+		case *loopControl:
 			return rt
 		}
 	}
@@ -167,13 +126,10 @@ func evalBlockStatement(block *ast.BlockStatement, env *object.Environment) obje
 	var result object.Object
 
 	for _, stmt := range block.Statements {
-		result = Eval(stmt, env)
+		result = eval(stmt, env)
 
-		if result != nil {
-			rt := result.Type()
-			if rt == object.RETURN_VALUE_OBJ || rt == object.ERROR_OBJ {
-				return result
-			}
+		if isEvaluationExit(result) {
+			return result
 		}
 	}
 
@@ -259,16 +215,16 @@ func evalIntegerComparison(operator string, left, right int64) object.Object {
 }
 
 func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {
-	condition := Eval(ie.Condition, env)
-	if isError(condition) {
+	condition := eval(ie.Condition, env)
+	if isEvaluationExit(condition) {
 		return condition
 	}
 
 	if isTruthy(condition) {
-		return Eval(ie.Consequence, env)
+		return eval(ie.Consequence, env)
 	}
 	if ie.Alternative != nil {
-		return Eval(ie.Alternative, env)
+		return eval(ie.Alternative, env)
 	}
 	return NULL
 }
@@ -283,13 +239,13 @@ func evalInfixExpressionNode(node *ast.InfixExpression, env *object.Environment)
 		return evalLogicalExpression(node.Operator, node.Left, node.Right, env)
 	}
 
-	left := Eval(node.Left, env)
-	if isError(left) {
+	left := eval(node.Left, env)
+	if isEvaluationExit(left) {
 		return left
 	}
 
-	right := Eval(node.Right, env)
-	if isError(right) {
+	right := eval(node.Right, env)
+	if isEvaluationExit(right) {
 		return right
 	}
 
@@ -302,8 +258,8 @@ func evalAssignmentExpression(node *ast.InfixExpression, env *object.Environment
 		return newError("left side of assignment must be an identifier")
 	}
 
-	val := Eval(node.Right, env)
-	if isError(val) {
+	val := eval(node.Right, env)
+	if isEvaluationExit(val) {
 		return val
 	}
 
@@ -314,8 +270,8 @@ func evalAssignmentExpression(node *ast.InfixExpression, env *object.Environment
 }
 
 func evalLogicalExpression(operator string, left, right ast.Expression, env *object.Environment) object.Object {
-	leftVal := Eval(left, env)
-	if isError(leftVal) {
+	leftVal := eval(left, env)
+	if isEvaluationExit(leftVal) {
 		return leftVal
 	}
 
@@ -332,8 +288,8 @@ func evalLogicalExpression(operator string, left, right ast.Expression, env *obj
 		return newError("unknown operator: %s", operator)
 	}
 
-	rightVal := Eval(right, env)
-	if isError(rightVal) {
+	rightVal := eval(right, env)
+	if isEvaluationExit(rightVal) {
 		return rightVal
 	}
 	return nativeBoolToBooleanObject(isTruthy(rightVal))
@@ -385,8 +341,8 @@ func evalExpressions(
 	var result []object.Object
 
 	for _, e := range exp {
-		evaluated := Eval(e, env)
-		if isError(evaluated) {
+		evaluated := eval(e, env)
+		if isEvaluationExit(evaluated) {
 			return []object.Object{evaluated}
 		}
 		result = append(result, evaluated)
@@ -438,8 +394,8 @@ func evalHashMapLiteral(
 	pairs := make(map[object.HashKey]object.HashPair)
 
 	for keyNode, valueNode := range node.Pairs {
-		key := Eval(keyNode, env)
-		if isError(key) {
+		key := eval(keyNode, env)
+		if isEvaluationExit(key) {
 			return key
 		}
 
@@ -448,8 +404,8 @@ func evalHashMapLiteral(
 			return withErrorSpan(newError("unusable as hash key: %s", key.Type()), keyNode.Span())
 		}
 
-		value := Eval(valueNode, env)
-		if isError(value) {
+		value := eval(valueNode, env)
+		if isEvaluationExit(value) {
 			return value
 		}
 
