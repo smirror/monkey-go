@@ -2,9 +2,7 @@ package evaluator
 
 import (
 	"fmt"
-	"monkey-go/ast"
 	"monkey-go/diagnostic"
-	"monkey-go/object"
 	"monkey-go/token"
 )
 
@@ -28,13 +26,4 @@ func newMacroExpansionError(span token.Span, format string, args ...any) *MacroE
 	return &MacroExpansionError{report: diagnostic.Diagnostic{
 		Kind: diagnostic.Macro, Message: fmt.Sprintf(format, args...), Span: span,
 	}}
-}
-
-func macroEvaluationError(name string, call *ast.CallExpression, cause *object.Error) *MacroExpansionError {
-	located := withErrorSpan(cause, call.Span())
-	traced := withCallFrame(located, call).(*object.Error)
-	report := traced.Diagnostic()
-	report.Kind = diagnostic.Macro
-	report.Message = fmt.Sprintf("macro %s: %s", name, cause.Message)
-	return &MacroExpansionError{report: report}
 }

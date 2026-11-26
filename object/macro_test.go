@@ -14,19 +14,12 @@ func TestMacroObjects(t *testing.T) {
 		display string
 	}{
 		{
-			name:    "quoted syntax",
-			value:   &Quote{Node: &ast.InfixExpression{Left: parameter, Operator: "+", Right: parameter}},
-			kind:    QUOTE_OBJ,
-			display: "QUOTE((input + input))",
-		},
-		{
 			name: "macro definition",
 			value: &Macro{
 				Parameters: []*ast.Identifier{parameter},
 				Body: &ast.BlockStatement{Statements: []ast.Statement{
 					&ast.ExpressionStatement{Expression: parameter},
 				}},
-				Env: NewEnvironment(),
 			},
 			kind:    MACRO_OBJ,
 			display: "macro(1 parameters) {input}",

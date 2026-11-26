@@ -24,7 +24,7 @@ func TestModifyTraversesChildrenWithoutChangingOriginal(t *testing.T) {
 		{"if (1 < 1) { 1; } else { 1; }", "if (2 < 2) { 2; } else { 2; }"},
 		{"if (true) { 1; }", "if (true) { 2; }"},
 		{"fn(x) { 1; }", "fn(x) { 2; }"},
-		{"macro(x) { quote(1 + unquote(x)); }", "macro(x) { quote(2 + unquote(x)); }"},
+		{"macro(x) { 1 + x; }", "macro(x) { 2 + x; }"},
 		{"call(1, 1)", "call(2, 2)"},
 		{"fn(x) { 1; }(1)", "fn(x) { 2; }(2)"},
 		{"[1, 1]", "[2, 2]"},
@@ -110,12 +110,12 @@ func TestModifyCopiesCollectionStorage(t *testing.T) {
 }
 
 func TestModifyCanReuseMacroDefinition(t *testing.T) {
-	definition := parseModifyProgram(t, "macro(x) { quote(1 + unquote(x)); }")
+	definition := parseModifyProgram(t, "macro(x) { 1 + x; }")
 	before := definition.String()
 	first := ast.Modify(definition, replaceOneWith(2))
 	second := ast.Modify(definition, replaceOneWith(3))
-	assertNodeString(t, first, "macro(x) {quote((2 + unquote(x)))}")
-	assertNodeString(t, second, "macro(x) {quote((3 + unquote(x)))}")
+	assertNodeString(t, first, "macro(x) {(2 + x)}")
+	assertNodeString(t, second, "macro(x) {(3 + x)}")
 	assertNodeString(t, definition, before)
 }
 
@@ -135,6 +135,7 @@ func TestModifyPreservesMissingChildren(t *testing.T) {
 		&ast.CallExpression{Arguments: []ast.Expression{nil}},
 		&ast.ArrayLiteral{Elements: []ast.Expression{nil}},
 		&ast.IndexExpression{},
+		&ast.MacroExpansion{},
 		&ast.HashMapLiteral{Pairs: map[ast.Expression]ast.Expression{}},
 	}
 	for _, node := range nodes {
@@ -170,7 +171,7 @@ func TestMacroLiteralString(t *testing.T) {
 		want   string
 	}{
 		{"macro() {}", "macro() {}"},
-		{"macro(x, y) { quote(x + y); }", "macro(x, y) {quote((x + y))}"},
+		{"macro(x, y) { x + y; }", "macro(x, y) {(x + y)}"},
 	}
 	for _, tc := range cases {
 		program := parseModifyProgram(t, tc.source)

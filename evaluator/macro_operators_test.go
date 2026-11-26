@@ -4,13 +4,12 @@ import (
 	"monkey-go/ast"
 	"monkey-go/diagnostic"
 	"monkey-go/object"
-	"reflect"
 	"testing"
 )
 
 func TestMacroExpansionPreservesComparisonAndModuloInLoops(t *testing.T) {
 	input := `let eligible = macro(x) {
-    quote(unquote(x) % 2 == 0 && unquote(x) >= -2 && unquote(x) <= 4);
+    x % 2 == 0 && x >= -2 && x <= 4;
 };
 let total = 0;
 for i in range(-5, 6) {
@@ -21,9 +20,9 @@ total;`
 	testIntegerObject(t, Eval(expanded, object.NewEnvironment()), 4)
 }
 
-func TestUnquoteComputesComparisonAndModulo(t *testing.T) {
+func TestTemplateComputesComparisonAndModuloAtRuntime(t *testing.T) {
 	input := `let remainder = macro() {
-    quote(unquote(if (2 <= 2 && 3 >= 3) { -5 % 3; } else { 99; }));
+    if (2 <= 2 && 3 >= 3) { -5 % 3; } else { 99; };
 };
 remainder();`
 	expanded := expandMacroProgram(t, input, object.NewEnvironment())
@@ -32,7 +31,7 @@ remainder();`
 
 func TestExpandedModuloDiagnosticUsesArgumentSource(t *testing.T) {
 	env := object.NewEnvironment()
-	definition := "let identity = macro(x) { quote(unquote(x)); };"
+	definition := "let identity = macro(x) { x; };"
 	DefineMacros(parseLocatedMacroProgram(t, "definitions.mk", definition), env)
 	program := parseLocatedMacroProgram(t, "calls.mk", "identity(7 % 0)")
 	call := program.Statements[0].(*ast.ExpressionStatement).Expression.(*ast.CallExpression)
@@ -45,7 +44,11 @@ func TestExpandedModuloDiagnosticUsesArgumentSource(t *testing.T) {
 	want := diagnostic.Diagnostic{
 		Kind: diagnostic.Runtime, Message: "modulo by zero", Span: operator.Token.Span,
 	}
-	if got := failure.Diagnostic(); !reflect.DeepEqual(got, want) {
+	got := failure.Diagnostic()
+	if got.Kind != want.Kind || got.Message != want.Message || got.Span != want.Span {
 		t.Fatalf("expanded modulo diagnostic = %+v, want %+v", got, want)
+	}
+	if len(got.Stack) != 1 || got.Stack[0].Name != "identity" || got.Stack[0].Span != call.Span() {
+		t.Fatalf("expanded modulo diagnostic lost macro call: %+v", got.Stack)
 	}
 }

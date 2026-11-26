@@ -20,7 +20,6 @@ const (
 	ERROR_OBJ        = "ERROR"
 	FUNCTION_OBJ     = "FUNCTION"
 	MACRO_OBJ        = "MACRO"
-	QUOTE_OBJ        = "QUOTE"
 	STRING_OBJ       = "STRING"
 	BUILTIN_OBJ      = "BUILTIN"
 	ARRAY_OBJ        = "ARRAY"
@@ -116,25 +115,17 @@ func (f *Function) Inspect() string {
 	return out.String()
 }
 
-// Macro captures its definition environment and holds AST rather than values.
+// Macro holds a syntax template; its body is substituted, never evaluated
+// during expansion. Free identifiers resolve in the caller's runtime scope.
 type Macro struct {
 	Parameters []*ast.Identifier
 	Body       *ast.BlockStatement
-	Env        *Environment
 }
 
 func (m *Macro) Type() ObjectType { return MACRO_OBJ }
 func (m *Macro) Inspect() string {
 	return "macro(" + fmt.Sprint(len(m.Parameters)) + " parameters) {" + m.Body.String() + "}"
 }
-
-// Quote wraps unevaluated Monkey syntax as a value.
-type Quote struct {
-	Node ast.Node
-}
-
-func (q *Quote) Type() ObjectType { return QUOTE_OBJ }
-func (q *Quote) Inspect() string  { return "QUOTE(" + q.Node.String() + ")" }
 
 type String struct {
 	Value string

@@ -11,8 +11,7 @@ import (
 
 func parseMacroTest(t *testing.T, source string) *parser.Parser {
 	t.Helper()
-	p := parser.New(lexer.New(source))
-	return p
+	return parser.New(lexer.New(source))
 }
 
 func parseMacroProgram(t *testing.T, source string) *ast.Program {
@@ -36,66 +35,32 @@ func expandMacroProgram(t *testing.T, source string, env *object.Environment) as
 	return expanded
 }
 
-func TestQuoteAndUnquote(t *testing.T) {
-	cases := []struct {
-		input string
-		want  string
-	}{
-		{"quote(5 + 5)", "(5 + 5)"},
-		{"quote(8 + unquote(4 + 4))", "(8 + 8)"},
-		{"quote(unquote(true))", "true"},
-		{"quote(unquote(false))", "false"},
-		{`quote(unquote("monkey"))`, "monkey"},
-		{"quote(unquote(-7))", "-7"},
-		{"quote(unquote(quote(1 + 2)))", "(1 + 2)"},
-		{"let value = 9; quote(unquote(value));", "9"},
-		{"quote(missing(1 + 2))", "missing((1 + 2))"},
-	}
-	for _, tc := range cases {
-		t.Run(tc.input, func(t *testing.T) {
-			got := Eval(parseMacroProgram(t, tc.input), object.NewEnvironment())
-			quoteObj, ok := got.(*object.Quote)
-			if !ok {
-				t.Fatalf("expected Quote, got %T (%v)", got, got)
-			}
-			if got := quoteObj.Node.String(); got != tc.want {
-				t.Fatalf("quote node = %q, want %q", got, tc.want)
-			}
-		})
-	}
-}
-
 func TestMacroExpansionAndDefinitionReuse(t *testing.T) {
-	input := `let twice = macro(x) { quote(unquote(x) + unquote(x)); };
-twice(1);
-twice(7);`
-	program := parseMacroProgram(t, input)
-	macroEnv := object.NewEnvironment()
-	DefineMacros(program, macroEnv)
-	if len(program.Statements) != 2 {
-		t.Fatalf("runtime statement count = %d, want 2", len(program.Statements))
+	env := object.NewEnvironment()
+	definition := parseMacroProgram(t, `let twice = macro(x) { x + x; };`)
+	DefineMacros(definition, env)
+	if len(definition.Statements) != 0 {
+		t.Fatal("macro definition was left in the runtime program")
 	}
-	expanded, err := ExpandMacros(program, macroEnv)
-	if err != nil {
-		t.Fatal(err)
+	for _, value := range []struct {
+		source string
+		want   int64
+	}{{"twice(1)", 2}, {"twice(7)", 14}} {
+		expanded := expandMacroProgram(t, value.source, env)
+		testIntegerObject(t, Eval(expanded, object.NewEnvironment()), value.want)
 	}
-	got := Eval(expanded, object.NewEnvironment())
-	integer, ok := got.(*object.Integer)
-	if !ok || integer.Value != 14 {
-		t.Fatalf("result = %v (%T), want integer 14", got, got)
+	macro, _ := env.Get("twice")
+	if macro.(*object.Macro).Body.String() != "(x + x)" {
+		t.Fatal("expansion modified the stored definition")
 	}
 }
 
 func TestNestedMacroExpansion(t *testing.T) {
-	input := `let inc = macro(x) { quote(unquote(x) + 1); };
-let twice = macro(x) { quote(unquote(x) + unquote(x)); };
+	input := `let inc = macro(x) { x + 1; };
+let twice = macro(x) { x + x; };
 twice(inc(3));`
 	expanded := expandMacroProgram(t, input, object.NewEnvironment())
-	got := Eval(expanded, object.NewEnvironment())
-	value, ok := got.(*object.Integer)
-	if !ok || value.Value != 8 {
-		t.Fatalf("result = %v (%T), want integer 8", got, got)
-	}
+	testIntegerObject(t, Eval(expanded, object.NewEnvironment()), 8)
 }
 
 func TestMacroErrors(t *testing.T) {
@@ -103,15 +68,13 @@ func TestMacroErrors(t *testing.T) {
 		source string
 		want   string
 	}{
-		{`let twice = macro(x) { quote(unquote(x) + unquote(x)); }; twice();`, "expects 1 arguments"},
-		{`let invalid = macro() { 10; }; invalid();`, "must return quote"},
-		{`let empty = macro() {}; empty();`, "must return quote"},
-		{`let invalid = macro() { missing; }; invalid();`, "macro invalid: identifier not found: missing"},
-		{`let invalid = macro() { quote(unquote([])); }; invalid();`, "macro invalid: cannot unquote ARRAY as an expression"},
-		{`let recursive = macro(x) { quote(recursive(unquote(x))); }; recursive(1);`, "exceeded 32 passes"},
+		{`let twice = macro(x) { x + x; }; twice();`, "expects 1 arguments, got 0"},
+		{`let identity = macro(x) { x; }; identity(1, 2);`, "expects 1 arguments, got 2"},
+		{`let recursive = macro(x) { recursive(x); }; recursive(1);`, "exceeded 32 nested expansions"},
+		{`let a = macro() { b(); }; let b = macro() { a(); }; a();`, "exceeded 32 nested expansions"},
 	}
 	for _, tc := range cases {
-		t.Run(tc.want, func(t *testing.T) {
+		t.Run(tc.source, func(t *testing.T) {
 			program := parseMacroProgram(t, tc.source)
 			env := object.NewEnvironment()
 			DefineMacros(program, env)
@@ -124,27 +87,35 @@ func TestMacroErrors(t *testing.T) {
 }
 
 func TestGeneratedMacroCallsAndExplicitReturn(t *testing.T) {
-	input := `let inc = macro(x) { return quote(unquote(x) + 1); };
-let generated = macro(x) { quote(inc(unquote(x))); };
-generated(4);`
+	input := `let inc = macro(x) { return x + 1; };
+let generated = macro(x) { inc(x); };
+generated(4); 99;`
 	expanded := expandMacroProgram(t, input, object.NewEnvironment())
 	testIntegerObject(t, Eval(expanded, object.NewEnvironment()), 5)
 }
 
 func TestMacroArgumentsAreSyntax(t *testing.T) {
-	input := `let ignore = macro(x) { quote(42); }; ignore(missing);`
-	expanded := expandMacroProgram(t, input, object.NewEnvironment())
-	testIntegerObject(t, Eval(expanded, object.NewEnvironment()), 42)
+	cases := []string{
+		`let ignore = macro(x) { 42; }; ignore(missing);`,
+		`let required = macro(x) { x; }; let ignore = macro(x) { 42; }; ignore(required());`,
+		`let recursive = macro() { recursive(); }; let ignore = macro(x) { 42; }; ignore(recursive());`,
+	}
+	for _, source := range cases {
+		t.Run(source, func(t *testing.T) {
+			expanded := expandMacroProgram(t, source, object.NewEnvironment())
+			testIntegerObject(t, Eval(expanded, object.NewEnvironment()), 42)
+		})
+	}
 }
 
 func TestMacroEnvironmentRemainsSeparateFromRuntime(t *testing.T) {
 	env := object.NewEnvironment()
 	env.Set("offset", &object.Integer{Value: 3})
-	input := `let add = macro(x) { quote(unquote(x) + unquote(offset)); };
+	input := `let add = macro(x) { x + offset; };
 let offset = 100;
-add(offset);`
+add(7);`
 	expanded := expandMacroProgram(t, input, env)
-	testIntegerObject(t, Eval(expanded, object.NewEnvironment()), 103)
+	testIntegerObject(t, Eval(expanded, object.NewEnvironment()), 107)
 }
 
 func TestExpansionPreservesRuntimeCalls(t *testing.T) {
@@ -169,33 +140,46 @@ func TestExpansionPreservesRuntimeCalls(t *testing.T) {
 	}
 }
 
-func TestMacroRejectsNonExpressionQuote(t *testing.T) {
-	env := object.NewEnvironment()
-	env.Set("statements", &object.Quote{Node: &ast.Program{}})
-	program := parseMacroProgram(t, `let invalid = macro() { statements; }; invalid();`)
-	DefineMacros(program, env)
-	_, err := ExpandMacros(program, env)
-	if err == nil || err.Error() != "macro invalid returned a non-expression AST node" {
-		t.Fatalf("unexpected expansion error: %v", err)
-	}
-}
-
-func TestExpansionStopsEvaluatingMacrosAfterFirstError(t *testing.T) {
+func TestExpansionNeverExecutesTemplateBody(t *testing.T) {
 	calls := 0
 	env := object.NewEnvironment()
 	env.Set("tick", &object.Builtin{Fn: func(args ...object.Object) object.Object {
 		calls++
 		return &object.Integer{Value: 1}
 	}})
-	program := parseMacroProgram(t, `let invalid = macro() { missing; };
-let later = macro() { quote(unquote(tick())); };
-invalid(); later();`)
-	DefineMacros(program, env)
-	_, err := ExpandMacros(program, env)
-	if err == nil || err.Error() != "macro invalid: identifier not found: missing" {
-		t.Fatalf("unexpected expansion error: %v", err)
-	}
+	expanded := expandMacroProgram(t, `let effect = macro() { tick(); 7; }; effect();`, env)
 	if calls != 0 {
-		t.Fatalf("evaluated %d later macros after expansion failed", calls)
+		t.Fatal("expansion executed the macro body")
 	}
+	testIntegerObject(t, Eval(expanded, env), 7)
+	if calls != 1 {
+		t.Fatalf("runtime called tick %d times, want 1", calls)
+	}
+}
+
+func TestMacroExpansionDepthBoundary(t *testing.T) {
+	for _, depth := range []int{32, 33} {
+		input := `let identity = macro(x) { x; }; `
+		input += strings.Repeat("identity(", depth) + "7" + strings.Repeat(")", depth)
+		program := parseMacroProgram(t, input)
+		env := object.NewEnvironment()
+		DefineMacros(program, env)
+		expanded, err := ExpandMacros(program, env)
+		if depth == 33 {
+			if err == nil {
+				t.Fatal("accepted 33 nested expansions")
+			}
+			continue
+		}
+		if err != nil {
+			t.Fatal(err)
+		}
+		testIntegerObject(t, Eval(expanded, object.NewEnvironment()), 7)
+	}
+}
+
+func TestIndependentMacrosDoNotShareExpansionDepth(t *testing.T) {
+	input := `let identity = macro(x) { x; }; ` + strings.Repeat("identity(7);", 64)
+	expanded := expandMacroProgram(t, input, object.NewEnvironment())
+	testIntegerObject(t, Eval(expanded, object.NewEnvironment()), 7)
 }

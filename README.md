@@ -194,27 +194,82 @@ let factorial = fn(n) {
 
 ### Macros (experimental)
 
-`macro` definitions operate on syntax trees before evaluation; arguments are
-quoted rather than evaluated. `quote(expr)` captures source syntax, and
-`unquote(expr)` evaluates a sub-expression while building quoted syntax.
+The body of a `macro` is a syntax template. Before runtime evaluation, each
+macro call substitutes its argument expressions for uses of the corresponding
+parameters in that template. Calls use the same `name(arguments)` syntax as
+ordinary functions.
 
 ```monkey
-let twice = macro(x) { quote(unquote(x) + unquote(x)); };
+let twice = macro(x) { x + x; };
 twice(3 + 1)  // expands to ((3 + 1) + (3 + 1)), yielding 8
+
+let reverse = macro(a, b) { b - a; };
+reverse(2 + 2, 10 - 5)  // evaluates (10 - 5) - (2 + 2), yielding 1
 ```
 
-Macros are currently top-level declarations. They persist between REPL inputs,
-but expand before runtime evaluation and are not runtime function values. The
-expander rejects incorrect argument counts, non-quoted results, and runaway
-recursive expansion. Expansion supports syntax-only macros, not hygienic macro
-namespacing.
+Arguments are syntax, so their evaluation depends on where the template uses
+them. An unused argument is neither expanded nor evaluated. An argument used
+twice is evaluated twice when both occurrences run. Runtime control flow still
+applies: an expression in an untaken `if` branch is not evaluated.
 
-Expansion errors are reported on the REPL diagnostic stream and retain their
-source locations. Errors while evaluating a macro keep the definition's source
-and include the macro call site; the REPL can then accept another submission.
-Quoted arguments keep the source of the argument, while literals computed by
-`unquote` use the originating `unquote(...)` range. Rewriting a macro does not
-overwrite the locations in its reusable definition.
+```monkey
+let ignore = macro(unused) { 42; };
+ignore(missing)  // 42; missing is never evaluated
+
+let counter = 0;
+twice(counter = counter + 1)  // 3; counter is incremented twice and ends at 2
+```
+
+Templates can contain multiple statements, `if`, `for`, and `fn`. Their bodies
+run in the caller's scope. A `let` in a template creates a binding in that scope,
+and a free name is resolved there. A `return` exits the enclosing caller
+function; the macro does not introduce a separate function call boundary.
+
+```monkey
+let remember = macro(value) { let saved = value; saved + 1; };
+remember(40)  // 41
+saved         // 40; the binding remains in the caller's scope
+
+let addOffset = macro(value) { value + offset; };
+let calculate = fn(offset) { addOffset(2); };
+calculate(40)  // 42; offset belongs to calculate's call
+```
+
+Macro declarations are currently top-level only. They persist between REPL
+inputs and are not runtime function values. Parameter substitution respects
+bindings introduced by `let`, function parameters, and loop variables.
+Expansion is not hygienic: names introduced by the template can capture or
+overwrite caller bindings. Expansion performs syntax substitution only; there
+is no expansion-time evaluation of arithmetic, conditions, or helper functions.
+
+Binding analysis follows the syntax being expanded. A declaration within an
+`if` branch shadows template parameters and macro names within that branch;
+neither branch is executed to decide bindings after the conditional. Runtime
+bindings from earlier REPL inputs are also outside this analysis. Use distinct
+names for macros and runtime values, and avoid conditionally rebinding template
+parameters or macro names.
+
+This is a breaking change from the earlier `quote` / `unquote` macro syntax.
+The wrappers must be removed when migrating a template:
+
+```monkey
+// Before: obsolete syntax
+let twice = macro(x) { quote(unquote(x) + unquote(x)); };
+
+// After
+let twice = macro(x) { x + x; };
+```
+
+`quote` and `unquote` no longer have special behavior. They are ordinary
+identifiers and can be used as names for user-defined functions.
+
+Incorrect argument counts and the 32-level nested expansion limit produce
+macro expansion errors. Errors in the expanded body, such as division by zero,
+are runtime errors. Both use the REPL diagnostic stream, and the REPL can
+accept another submission afterward. Template nodes retain the definition's
+source locations, substituted arguments retain their caller's source, and
+runtime diagnostics include the macro call site. Expansion does not overwrite
+the locations in a reusable definition.
 
 For embedding, `evaluator.ExpandMacros` still returns `(ast.Node, error)`.
 An `*evaluator.MacroExpansionError` exposes `Diagnostic()` with kind `macro`,
@@ -347,7 +402,7 @@ standard library and justify any future external module by a concrete need.
 ## Feature
 - [x] Unicode support
 - [x] for-in loops
-- [x] Syntactic macros (`macro`, `quote`, `unquote`)
+- [x] Syntax-template macros (`macro`, with ordinary call syntax)
 - [x] logical operators
 
 ## Roadmap

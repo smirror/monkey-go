@@ -24,65 +24,59 @@ func Eval(node ast.Node, env *object.Environment) object.Object {
 
 func evalNode(node ast.Node, env *object.Environment) object.Object {
 	switch node := node.(type) {
-	// Statements
 	case *ast.Program:
 		return evalProgram(node, env)
-
 	case *ast.BlockStatement:
 		return evalBlockStatement(node, env)
-
 	case *ast.ForInStatement:
 		return evalForInStatement(node, env)
-
 	case *ast.ExpressionStatement:
 		return Eval(node.Expression, env)
-
 	case *ast.ReturnStatement:
 		return evalReturnStatement(node, env)
-
-	// Expressions
-	case *ast.IntegerLiteral:
-		return &object.Integer{Value: node.Value}
-
-	case *ast.Boolean:
-		return nativeBoolToBooleanObject(node.Value)
-
-	case *ast.StringLiteral:
-		return &object.String{Value: node.Value}
-
-	case *ast.PrefixExpression:
-		return evalPrefixExpressionNode(node, env)
-
-	case *ast.InfixExpression:
-		return evalInfixExpressionNode(node, env)
-
-	case *ast.IfExpression:
-		return evalIfExpression(node, env)
-
-	case *ast.Identifier:
-		return evalIdentifier(node, env)
-
 	case *ast.LetStatement:
 		return evalLetStatement(node, env)
+	}
+	return evalExpressionNode(node, env)
+}
 
-	case *ast.FunctionLiteral:
-		params := node.Parameters
-		body := node.Body
-		return &object.Function{Parameters: params, Env: env, Body: body}
-
+func evalExpressionNode(node ast.Node, env *object.Environment) object.Object {
+	switch node := node.(type) {
+	case *ast.PrefixExpression:
+		return evalPrefixExpressionNode(node, env)
+	case *ast.InfixExpression:
+		return evalInfixExpressionNode(node, env)
+	case *ast.IfExpression:
+		return evalIfExpression(node, env)
+	case *ast.Identifier:
+		return evalIdentifier(node, env)
 	case *ast.CallExpression:
 		return evalCallExpression(node, env)
-
-	case *ast.ArrayLiteral:
-		return evalArrayLiteral(node, env)
-
+	case *ast.MacroExpansion:
+		return evalMacroExpansion(node, env)
 	case *ast.IndexExpression:
 		return evalIndexExpressionNode(node, env)
+	}
+	return evalLiteralNode(node, env)
+}
 
+func evalLiteralNode(node ast.Node, env *object.Environment) object.Object {
+	switch node := node.(type) {
+	case *ast.IntegerLiteral:
+		return &object.Integer{Value: node.Value}
+	case *ast.Boolean:
+		return nativeBoolToBooleanObject(node.Value)
+	case *ast.StringLiteral:
+		return &object.String{Value: node.Value}
+	case *ast.FunctionLiteral:
+		return &object.Function{Parameters: node.Parameters, Env: env, Body: node.Body}
+	case *ast.MacroLiteral:
+		return newError("macro literals are only supported in top-level declarations")
+	case *ast.ArrayLiteral:
+		return evalArrayLiteral(node, env)
 	case *ast.HashMapLiteral:
 		return evalHashMapLiteral(node, env)
 	}
-
 	return nil
 }
 
@@ -260,7 +254,7 @@ func evalIntegerComparison(operator string, left, right int64) object.Object {
 
 func evalIfExpression(ie *ast.IfExpression, env *object.Environment) object.Object {
 	condition := Eval(ie.Condition, env)
-	if isError(condition) {
+	if isEvaluationExit(condition) {
 		return condition
 	}
 
@@ -284,12 +278,12 @@ func evalInfixExpressionNode(node *ast.InfixExpression, env *object.Environment)
 	}
 
 	left := Eval(node.Left, env)
-	if isError(left) {
+	if isEvaluationExit(left) {
 		return left
 	}
 
 	right := Eval(node.Right, env)
-	if isError(right) {
+	if isEvaluationExit(right) {
 		return right
 	}
 
@@ -297,13 +291,13 @@ func evalInfixExpressionNode(node *ast.InfixExpression, env *object.Environment)
 }
 
 func evalAssignmentExpression(node *ast.InfixExpression, env *object.Environment) object.Object {
-	ident, ok := node.Left.(*ast.Identifier)
+	ident, ok := assignmentIdentifier(node.Left)
 	if !ok {
 		return newError("left side of assignment must be an identifier")
 	}
 
 	val := Eval(node.Right, env)
-	if isError(val) {
+	if isEvaluationExit(val) {
 		return val
 	}
 
@@ -313,9 +307,27 @@ func evalAssignmentExpression(node *ast.InfixExpression, env *object.Environment
 	return val
 }
 
+func assignmentIdentifier(expression ast.Expression) (*ast.Identifier, bool) {
+	for {
+		expansion, ok := expression.(*ast.MacroExpansion)
+		if !ok {
+			identifier, found := expression.(*ast.Identifier)
+			return identifier, found
+		}
+		if len(expansion.Body.Statements) != 1 {
+			return nil, false
+		}
+		statement, ok := expansion.Body.Statements[0].(*ast.ExpressionStatement)
+		if !ok {
+			return nil, false
+		}
+		expression = statement.Expression
+	}
+}
+
 func evalLogicalExpression(operator string, left, right ast.Expression, env *object.Environment) object.Object {
 	leftVal := Eval(left, env)
-	if isError(leftVal) {
+	if isEvaluationExit(leftVal) {
 		return leftVal
 	}
 
@@ -333,7 +345,7 @@ func evalLogicalExpression(operator string, left, right ast.Expression, env *obj
 	}
 
 	rightVal := Eval(right, env)
-	if isError(rightVal) {
+	if isEvaluationExit(rightVal) {
 		return rightVal
 	}
 	return nativeBoolToBooleanObject(isTruthy(rightVal))
@@ -386,7 +398,7 @@ func evalExpressions(
 
 	for _, e := range exp {
 		evaluated := Eval(e, env)
-		if isError(evaluated) {
+		if isEvaluationExit(evaluated) {
 			return []object.Object{evaluated}
 		}
 		result = append(result, evaluated)
@@ -439,7 +451,7 @@ func evalHashMapLiteral(
 
 	for keyNode, valueNode := range node.Pairs {
 		key := Eval(keyNode, env)
-		if isError(key) {
+		if isEvaluationExit(key) {
 			return key
 		}
 
@@ -449,7 +461,7 @@ func evalHashMapLiteral(
 		}
 
 		value := Eval(valueNode, env)
-		if isError(value) {
+		if isEvaluationExit(value) {
 			return value
 		}
 

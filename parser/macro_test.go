@@ -7,7 +7,7 @@ import (
 )
 
 func TestMacroLiteralParsing(t *testing.T) {
-	literal := parseMacroDeclaration(t, `let identity = macro(x) { quote(unquote(x)); };`)
+	literal := parseMacroDeclaration(t, `let identity = macro(x) { x; };`)
 	if literal.TokenLiteral() != "macro" {
 		t.Fatalf("macro token = %q, want macro", literal.TokenLiteral())
 	}
@@ -18,8 +18,49 @@ func TestMacroLiteralParsing(t *testing.T) {
 	if literal.Body == nil || len(literal.Body.Statements) != 1 {
 		t.Fatalf("unexpected macro body: %+v", literal.Body)
 	}
-	if got := literal.Body.String(); got != "quote(unquote(x))" {
-		t.Fatalf("macro body = %q, want quote(unquote(x))", got)
+	if got := literal.Body.String(); got != "x" {
+		t.Fatalf("macro body = %q, want x", got)
+	}
+}
+
+func TestMacroTemplateBodies(t *testing.T) {
+	tests := []struct {
+		input      string
+		statements []string
+	}{
+		{
+			`let remember = macro(x) { let saved = x; saved + 1; };`,
+			[]string{"let saved = x;", "saved + 1;"},
+		},
+		{
+			`let choose = macro(condition, yes, no) { if (condition) { yes; } else { no; }; };`,
+			[]string{"if (condition) { yes; } else { no; };"},
+		},
+		{
+			`let accumulate = macro(values) {
+    let positive = fn(value) { if (value > 0) { value; } else { 0; }; };
+    let total = 0;
+    for value in values { total = total + positive(value); }
+    return total;
+};`,
+			[]string{
+				"let positive = fn(value) { if (value > 0) { value; } else { 0; }; };",
+				"let total = 0;",
+				"for value in values { total = total + positive(value); }",
+				"return total;",
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.input, func(t *testing.T) {
+			literal := parseMacroDeclaration(t, tt.input)
+			if len(literal.Body.Statements) != len(tt.statements) {
+				t.Fatalf("body has %d statements, want %d", len(literal.Body.Statements), len(tt.statements))
+			}
+			for i, statement := range literal.Body.Statements {
+				checkSpanText(t, statement.Span(), tt.statements[i])
+			}
+		})
 	}
 }
 

@@ -23,58 +23,67 @@ func DefineMacros(program *ast.Program, env *object.Environment) {
 		env.Set(declaration.Name.Value, &object.Macro{
 			Parameters: literal.Parameters,
 			Body:       literal.Body,
-			Env:        env,
 		})
 	}
 	program.Statements = remaining
 }
 
-// ExpandMacros evaluates macro calls against quoted arguments before runtime.
-// The pass limit prevents unbounded self-expanding macros.
+// ExpandMacros replaces macro calls with syntax templates before runtime.
+// Templates expand from the outside in, so unused arguments are never visited.
+// A depth limit prevents unbounded self-expanding macros.
 func ExpandMacros(program ast.Node, env *object.Environment) (ast.Node, error) {
-	const maxPasses = 32
-	for pass := 0; pass < maxPasses; pass++ {
-		result, changed, failure := expandMacroPass(program, env)
-		if failure != nil {
-			return nil, failure
-		}
-		program = result
-		if !changed {
-			return program, nil
-		}
+	expander := &macroExpander{env: env}
+	result := expander.expand(program, make(macroScope), 0)
+	if expander.failure != nil {
+		return nil, expander.failure
 	}
-	return nil, newMacroExpansionError(program.Span(), "macro expansion exceeded %d passes", maxPasses)
+	return result, nil
 }
 
-func expandMacroPass(program ast.Node, env *object.Environment) (ast.Node, bool, error) {
-	changed := false
-	var failure error
-	result := ast.Modify(program, func(current ast.Node) ast.Node {
-		if failure != nil {
-			return current
-		}
-		call, ok := current.(*ast.CallExpression)
-		if !ok {
-			return current
-		}
-		name, macro := lookupMacro(call, env)
-		if macro == nil {
-			return current
-		}
-		replacement, err := expandMacroCall(name, call, macro)
-		if err != nil {
-			failure = err
-			return current
-		}
-		changed = true
-		return replacement
-	})
-	return result, changed, failure
+type macroExpander struct {
+	env     *object.Environment
+	failure error
 }
 
-func lookupMacro(call *ast.CallExpression, env *object.Environment) (string, *object.Macro) {
+func (e *macroExpander) expand(program ast.Node, scope macroScope, depth int) ast.Node {
+	walker := macroSyntaxWalker{
+		scope: scope,
+		rewrite: func(current ast.Node, scope macroScope) (ast.Node, bool) {
+			if e.failure != nil {
+				return current, false
+			}
+			call, ok := current.(*ast.CallExpression)
+			if !ok {
+				return current, true
+			}
+			name, macro := lookupMacro(call, e.env, scope)
+			if macro == nil {
+				return current, true
+			}
+			return e.expandCall(name, call, macro, scope, depth), false
+		},
+	}
+	return walker.walk(program)
+}
+
+func (e *macroExpander) expandCall(name string, call *ast.CallExpression, macro *object.Macro, scope macroScope, depth int) ast.Node {
+	const maxDepth = 32
+	if depth >= maxDepth {
+		e.failure = newMacroExpansionError(call.Span(), "macro expansion exceeded %d nested expansions", maxDepth)
+		return call
+	}
+	replacement, err := expandMacroCall(name, call, macro)
+	if err != nil {
+		e.failure = err
+		return call
+	}
+	// Process generated bindings before moving to the next caller statement.
+	return e.expand(replacement, scope, depth+1)
+}
+
+func lookupMacro(call *ast.CallExpression, env *object.Environment, scope macroScope) (string, *object.Macro) {
 	identifier, ok := call.Function.(*ast.Identifier)
-	if !ok {
+	if !ok || scope[identifier.Value] {
 		return "", nil
 	}
 	value, _ := env.Get(identifier.Value)
@@ -86,21 +95,10 @@ func expandMacroCall(name string, call *ast.CallExpression, macro *object.Macro)
 	if len(call.Arguments) != len(macro.Parameters) {
 		return nil, newMacroExpansionError(call.Span(), "macro %s expects %d arguments, got %d", name, len(macro.Parameters), len(call.Arguments))
 	}
-	local := object.NewEnclosedEnvironment(macro.Env)
-	for i, parameter := range macro.Parameters {
-		local.Set(parameter.Value, &object.Quote{Node: call.Arguments[i]})
+	expanded := &ast.MacroExpansion{
+		Body: substituteMacroBody(macro, call.Arguments),
+		Call: cloneMacroSyntax(call).(*ast.CallExpression),
 	}
-	evaluated := unwrapReturnValue(Eval(macro.Body, local))
-	if errObj, ok := evaluated.(*object.Error); ok {
-		return nil, macroEvaluationError(name, call, errObj)
-	}
-	quoted, ok := evaluated.(*object.Quote)
-	if !ok {
-		return nil, newMacroExpansionError(call.Span(), "macro %s must return quote(...)", name)
-	}
-	expression, ok := quoted.Node.(ast.Expression)
-	if !ok {
-		return nil, newMacroExpansionError(call.Span(), "macro %s returned a non-expression AST node", name)
-	}
-	return expression, nil
+	ast.SetSpan(expanded, call.Span())
+	return expanded, nil
 }
