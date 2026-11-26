@@ -2,11 +2,14 @@ package evaluator
 
 import (
 	"errors"
+	"fmt"
 	"monkey-go/ast"
 	"monkey-go/diagnostic"
 	"monkey-go/lexer"
 	"monkey-go/object"
 	"monkey-go/parser"
+	"monkey-go/token"
+	"reflect"
 	"testing"
 )
 
@@ -24,7 +27,7 @@ func TestMacroRuntimeErrorPreservesNestedCallSites(t *testing.T) {
 		if report.Kind != diagnostic.Runtime || report.Message != "division by zero" {
 			t.Fatalf("incorrect template runtime error: %+v", report)
 		}
-		if report.Span.Source.Name != "definitions.mk" || report.Span.Start.Line != 2 || report.Span.Start.Column != 25 {
+		if sourcePoint(report.Span) != "definitions.mk:2:25" {
 			t.Fatalf("template error lost its originating expression: %+v", report.Span)
 		}
 		checkMacroCallSites(t, report.Stack)
@@ -38,12 +41,20 @@ func checkMacroCallSites(t *testing.T, stack []diagnostic.Frame) {
 	if len(stack) != 2 {
 		t.Fatalf("expected a function and a macro frame, got %+v", stack)
 	}
-	if stack[0].Name != "divide" || stack[0].Span.Source.Name != "definitions.mk" || stack[0].Span.Start.Line != 3 {
-		t.Errorf("incorrect inner frame: %+v", stack[0])
+	want := []string{"divide at definitions.mk:3:3", "broken at calls.mk:1:1"}
+	for i, frame := range stack {
+		got := frame.Name + " at " + sourcePoint(frame.Span)
+		if got != want[i] {
+			t.Errorf("frame %d = %q, want %q", i, got, want[i])
+		}
 	}
-	if stack[1].Name != "broken" || stack[1].Span.Source.Name != "calls.mk" || stack[1].Span.Start.Column != 1 {
-		t.Errorf("incorrect macro call frame: %+v", stack[1])
+}
+
+func sourcePoint(span token.Span) string {
+	if span.Source == nil {
+		return "<unknown>"
 	}
+	return fmt.Sprintf("%s:%d:%d", span.Source.Name, span.Start.Line, span.Start.Column)
 }
 
 func TestMacroArityErrorPointsToCallWithoutEnteringDefinition(t *testing.T) {
@@ -53,7 +64,11 @@ func TestMacroArityErrorPointsToCallWithoutEnteringDefinition(t *testing.T) {
 	_, err := ExpandMacros(program, env)
 	report := requireMacroDiagnostic(t, err).Diagnostic()
 	call := program.Statements[0].(*ast.ExpressionStatement).Expression
-	if report.Kind != diagnostic.Macro || report.Span != call.Span() || len(report.Stack) != 0 {
+	want := diagnostic.Diagnostic{
+		Kind: diagnostic.Macro, Span: call.Span(),
+		Message: "macro identity expects 1 arguments, got 0",
+	}
+	if !reflect.DeepEqual(report, want) {
 		t.Fatalf("incorrect call-boundary diagnostic: %+v", report)
 	}
 }

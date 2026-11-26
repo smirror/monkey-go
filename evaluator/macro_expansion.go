@@ -56,23 +56,23 @@ func (e *macroExpander) expand(program ast.Node, scope macroScope, depth int) as
 			if !ok {
 				return current, true
 			}
-			name, macro := lookupMacro(call, e.env, scope)
+			macro := lookupMacro(call, e.env, scope)
 			if macro == nil {
 				return current, true
 			}
-			return e.expandCall(name, call, macro, scope, depth), false
+			return e.expandCall(call, macro, scope, depth), false
 		},
 	}
 	return walker.walk(program)
 }
 
-func (e *macroExpander) expandCall(name string, call *ast.CallExpression, macro *object.Macro, scope macroScope, depth int) ast.Node {
+func (e *macroExpander) expandCall(call *ast.CallExpression, macro *object.Macro, scope macroScope, depth int) ast.Node {
 	const maxDepth = 32
 	if depth >= maxDepth {
 		e.failure = newMacroExpansionError(call.Span(), "macro expansion exceeded %d nested expansions", maxDepth)
 		return call
 	}
-	replacement, err := expandMacroCall(name, call, macro)
+	replacement, err := expandMacroCall(call, macro)
 	if err != nil {
 		e.failure = err
 		return call
@@ -81,19 +81,19 @@ func (e *macroExpander) expandCall(name string, call *ast.CallExpression, macro 
 	return e.expand(replacement, scope, depth+1)
 }
 
-func lookupMacro(call *ast.CallExpression, env *object.Environment, scope macroScope) (string, *object.Macro) {
+func lookupMacro(call *ast.CallExpression, env *object.Environment, scope macroScope) *object.Macro {
 	identifier, ok := call.Function.(*ast.Identifier)
 	if !ok || scope[identifier.Value] {
-		return "", nil
+		return nil
 	}
 	value, _ := env.Get(identifier.Value)
 	macro, _ := value.(*object.Macro)
-	return identifier.Value, macro
+	return macro
 }
 
-func expandMacroCall(name string, call *ast.CallExpression, macro *object.Macro) (ast.Expression, error) {
+func expandMacroCall(call *ast.CallExpression, macro *object.Macro) (ast.Expression, error) {
 	if len(call.Arguments) != len(macro.Parameters) {
-		return nil, newMacroExpansionError(call.Span(), "macro %s expects %d arguments, got %d", name, len(macro.Parameters), len(call.Arguments))
+		return nil, newMacroExpansionError(call.Span(), "macro %s expects %d arguments, got %d", call.Function.String(), len(macro.Parameters), len(call.Arguments))
 	}
 	expanded := &ast.MacroExpansion{
 		Body: substituteMacroBody(macro, call.Arguments),

@@ -57,10 +57,17 @@ func parseMacroDefinition(t *testing.T, filename, source string) *ast.MacroLiter
 
 func assertMacroSourceSpan(t *testing.T, span token.Span, source string) {
 	t.Helper()
-	if span.Source == nil || span.Source.Name != "macros.mk" || span.Source.Text != source {
-		t.Fatalf("macro lost its source: %+v", span)
+	if span.Source == nil {
+		t.Fatal("macro lost its source")
 	}
-	if span.Start.Offset != 0 || span.End.Offset != len(source) {
-		t.Fatalf("macro range does not cover its definition: %+v", span)
+	wantSource := token.Source{Name: "macros.mk", Text: source}
+	if *span.Source != wantSource {
+		t.Fatalf("macro source = %+v, want %+v", *span.Source, wantSource)
+	}
+	if span.Start.Offset != 0 {
+		t.Fatalf("macro range starts at %d, want 0", span.Start.Offset)
+	}
+	if span.End.Offset != len(source) {
+		t.Fatalf("macro range ends at %d, want %d", span.End.Offset, len(source))
 	}
 }

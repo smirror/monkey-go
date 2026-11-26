@@ -112,8 +112,14 @@ func TestTemplateExpansionCopiesArgumentsAndDefinitions(t *testing.T) {
 	invocation := expanded.(*ast.Program).Statements[0].(*ast.ExpressionStatement).Expression.(*ast.MacroExpansion)
 	sum := invocation.Body.Statements[0].(*ast.ExpressionStatement).Expression.(*ast.InfixExpression)
 	sum.Left.(*ast.IntegerLiteral).Value = 100
-	if sum.Right.(*ast.IntegerLiteral).Value != 7 || argument.Value != 7 || program.String() != original {
-		t.Fatal("expanded placeholders shared mutable argument syntax")
+	if sum.Right.(*ast.IntegerLiteral).Value != 7 {
+		t.Fatal("expanded placeholders shared mutable syntax with each other")
+	}
+	if argument.Value != 7 {
+		t.Fatal("expanded placeholder shared mutable syntax with the original argument")
+	}
+	if program.String() != original {
+		t.Fatal("expansion modified the original program")
 	}
 	next := expandMacroProgram(t, "twice(2)", env)
 	testIntegerObject(t, Eval(next, object.NewEnvironment()), 4)

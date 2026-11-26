@@ -4,6 +4,7 @@ import (
 	"monkey-go/ast"
 	"monkey-go/diagnostic"
 	"monkey-go/object"
+	"reflect"
 	"testing"
 )
 
@@ -43,12 +44,10 @@ func TestExpandedModuloDiagnosticUsesArgumentSource(t *testing.T) {
 	failure := runtimeError(t, Eval(expanded, object.NewEnvironment()))
 	want := diagnostic.Diagnostic{
 		Kind: diagnostic.Runtime, Message: "modulo by zero", Span: operator.Token.Span,
+		Stack: []diagnostic.Frame{{Name: "identity", Span: call.Span()}},
 	}
 	got := failure.Diagnostic()
-	if got.Kind != want.Kind || got.Message != want.Message || got.Span != want.Span {
+	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("expanded modulo diagnostic = %+v, want %+v", got, want)
-	}
-	if len(got.Stack) != 1 || got.Stack[0].Name != "identity" || got.Stack[0].Span != call.Span() {
-		t.Fatalf("expanded modulo diagnostic lost macro call: %+v", got.Stack)
 	}
 }
