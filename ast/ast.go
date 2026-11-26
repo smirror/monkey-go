@@ -279,6 +279,46 @@ func (fl *FunctionLiteral) String() string {
 	return out.String()
 }
 
+// MacroLiteral holds a syntax template whose parameters are replaced during expansion.
+type MacroLiteral struct {
+	SourceLocation
+	Token      token.Token // 'macro' token
+	Parameters []*Identifier
+	Body       *BlockStatement
+}
+
+func (ml *MacroLiteral) expressionNode()      {}
+func (ml *MacroLiteral) TokenLiteral() string { return ml.Token.Literal }
+func (ml *MacroLiteral) String() string {
+	var params []string
+	for _, p := range ml.Parameters {
+		params = append(params, p.String())
+	}
+	return ml.TokenLiteral() + "(" + strings.Join(params, ", ") + ") {" + ml.Body.String() + "}"
+}
+
+// MacroExpansion holds an expanded template evaluated in its caller's environment.
+// Call is diagnostic metadata and is not part of the executable child tree.
+type MacroExpansion struct {
+	SourceLocation
+	Body *BlockStatement
+	Call *CallExpression
+}
+
+func (me *MacroExpansion) expressionNode()      {}
+func (me *MacroExpansion) TokenLiteral() string { return "macro" }
+func (me *MacroExpansion) String() string {
+	if me.Body == nil {
+		return "{}"
+	}
+	if len(me.Body.Statements) == 1 {
+		if expression, ok := me.Body.Statements[0].(*ExpressionStatement); ok {
+			return expression.String()
+		}
+	}
+	return "{" + me.Body.String() + "}"
+}
+
 type CallExpression struct {
 	SourceLocation
 	Token     token.Token // '(' token

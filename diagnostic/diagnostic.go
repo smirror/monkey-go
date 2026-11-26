@@ -16,10 +16,11 @@ type Kind string
 const (
 	Syntax  Kind = "syntax"
 	Runtime Kind = "runtime"
+	Macro   Kind = "macro"
 	IO      Kind = "io"
 )
 
-// Frame identifies an entered function's call site, not its declaration.
+// Frame identifies an entered function or macro's call site, not its declaration.
 type Frame struct {
 	Name string
 	Span token.Span

@@ -40,9 +40,9 @@ func StartWithErrorWriter(in io.Reader, out, errOut io.Writer) {
 }
 
 type replSession struct {
-	env         *object.Environment
-	out, errOut io.Writer
-	submission  int
+	env, macroEnv *object.Environment
+	out, errOut   io.Writer
+	submission    int
 }
 
 func (s *replSession) evaluateREPLSource(source string) bool {
@@ -56,7 +56,23 @@ func (s *replSession) evaluateREPLSource(source string) bool {
 	if len(p.Diagnostics()) != 0 {
 		return printParserErrors(s.errOut, p.Diagnostics())
 	}
-	return s.printValue(evaluator.Eval(program, s.env))
+	if s.macroEnv == nil {
+		s.macroEnv = object.NewEnvironment()
+	}
+	evaluator.DefineMacros(program, s.macroEnv)
+	expanded, err := evaluator.ExpandMacros(program, s.macroEnv)
+	if err != nil {
+		return s.printMacroError(err)
+	}
+	return s.printValue(evaluator.Eval(expanded, s.env))
+}
+
+func (s *replSession) printMacroError(err error) bool {
+	report := diagnostic.Diagnostic{Kind: diagnostic.Macro, Message: err.Error()}
+	if located, ok := err.(*evaluator.MacroExpansionError); ok {
+		report = located.Diagnostic()
+	}
+	return diagnostic.Write(s.errOut, report) == nil
 }
 
 func (s *replSession) printValue(value object.Object) bool {

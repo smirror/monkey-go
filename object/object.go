@@ -19,6 +19,7 @@ const (
 	RETURN_VALUE_OBJ = "RETURN_VALUE"
 	ERROR_OBJ        = "ERROR"
 	FUNCTION_OBJ     = "FUNCTION"
+	MACRO_OBJ        = "MACRO"
 	STRING_OBJ       = "STRING"
 	BUILTIN_OBJ      = "BUILTIN"
 	ARRAY_OBJ        = "ARRAY"
@@ -112,6 +113,18 @@ func (f *Function) Inspect() string {
 	out.WriteString("\n}")
 
 	return out.String()
+}
+
+// Macro holds a syntax template; its body is substituted, never evaluated
+// during expansion. Free identifiers resolve in the caller's runtime scope.
+type Macro struct {
+	Parameters []*ast.Identifier
+	Body       *ast.BlockStatement
+}
+
+func (m *Macro) Type() ObjectType { return MACRO_OBJ }
+func (m *Macro) Inspect() string {
+	return "macro(" + fmt.Sprint(len(m.Parameters)) + " parameters) {" + m.Body.String() + "}"
 }
 
 type String struct {

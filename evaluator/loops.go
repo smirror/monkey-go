@@ -9,7 +9,7 @@ import (
 // shadows any identifier with the same name.
 func evalForInStatement(stmt *ast.ForInStatement, outer *object.Environment) object.Object {
 	value := Eval(stmt.Iterable, outer)
-	if isError(value) {
+	if isEvaluationExit(value) {
 		return value
 	}
 	if value == nil {
@@ -29,15 +29,8 @@ func evalForInStatement(stmt *ast.ForInStatement, outer *object.Environment) obj
 		}
 		env.Set(stmt.Variable.Value, element)
 		result := Eval(stmt.Body, env)
-		if isLoopExit(result) {
+		if isEvaluationExit(result) {
 			return result
 		}
 	}
-}
-
-func isLoopExit(value object.Object) bool {
-	if value == nil {
-		return false
-	}
-	return isError(value) || value.Type() == object.RETURN_VALUE_OBJ
 }
